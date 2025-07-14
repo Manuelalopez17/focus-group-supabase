@@ -16,13 +16,7 @@ const riesgosPorEtapa = {
   "Disposición final": ['Mal manejo de residuos', 'Falta de cierre documental']
 };
 
-const sesiones = [
-  "Simulación",
-  "Sesión 1",
-  "Sesión 2",
-  "Sesión 3",
-  "Sesión Final"
-];
+const sesiones = ["Simulación", "Sesión 1", "Sesión 2", "Sesión 3", "Sesión Final"];
 
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
@@ -45,7 +39,7 @@ function Participante() {
     const impF = r?.importanciaFrecuencia || 0;
     const impI = r?.importanciaImpacto || 0;
     const scoreBase = f * i;
-    const scoreFinal = scoreBase * (impF + impI) / 100;
+    const scoreFinal = (impF * f + impI * i) / 100;
     return { scoreBase, scoreFinal };
   };
 
@@ -108,7 +102,7 @@ function Participante() {
     >
       <div
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
           padding: '40px',
           borderRadius: '12px',
           textAlign: 'center',
@@ -125,47 +119,20 @@ function Participante() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <input
-            className="border p-2 rounded"
-            placeholder="Nombre del participante"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
-          <input
-            className="border p-2 rounded"
-            placeholder="Empresa"
-            value={empresa}
-            onChange={(e) => setEmpresa(e.target.value)}
-          />
-          <input
-            className="border p-2 rounded"
-            placeholder="Años de experiencia"
-            type="number"
-            min="0"
-            value={experiencia}
-            onChange={(e) => setExperiencia(e.target.value)}
-          />
+          <input className="border p-2 rounded" placeholder="Nombre del participante" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <input className="border p-2 rounded" placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
+          <input className="border p-2 rounded" placeholder="Años de experiencia" type="number" min="0" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <select
-            className="border p-2 rounded w-full"
-            value={sesion}
-            onChange={(e) => setSesion(e.target.value)}
-          >
-            {sesiones.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
+          <select className="border p-2 rounded w-full" value={sesion} onChange={(e) => setSesion(e.target.value)}>
+            {sesiones.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
-          <select
-            className="border p-2 rounded w-full"
-            value={etapaSeleccionada}
-            onChange={(e) => {
-              setEtapaSeleccionada(e.target.value);
-              setRespuestas({});
-            }}
-          >
+          <select className="border p-2 rounded w-full" value={etapaSeleccionada} onChange={(e) => {
+            setEtapaSeleccionada(e.target.value);
+            setRespuestas({});
+          }}>
             <option value="">-- Seleccione Etapa del Proyecto --</option>
             {Object.keys(riesgosPorEtapa).map((etapa) => (
               <option key={etapa} value={etapa}>{etapa}</option>
@@ -173,15 +140,14 @@ function Participante() {
           </select>
         </div>
 
-        {/* Riesgos */}
         {riesgos.map((riesgo, index) => {
           const r = respuestas[riesgo] || {};
           const { scoreBase, scoreFinal } = calcularScore(r);
 
           return (
-            <div key={index} className="border p-4 mb-4 rounded bg-white shadow text-left">
-              <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+            <details key={index} className="border p-3 mb-4 rounded bg-white shadow text-left">
+              <summary className="font-semibold cursor-pointer text-gray-800">{riesgo}</summary>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                 <div>
                   <label>Frecuencia (1-5)</label>
                   <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
@@ -202,7 +168,7 @@ function Participante() {
               <p className="text-sm mt-2 text-gray-800">
                 <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final:</strong> {scoreFinal.toFixed(2)}
               </p>
-            </div>
+            </details>
           );
         })}
 
