@@ -36,7 +36,16 @@ function Participante() {
   const handleChange = (riesgo, campo, valor) => {
     const nuevo = { ...respuestas };
     if (!nuevo[riesgo]) nuevo[riesgo] = {};
-    nuevo[riesgo][campo] = parseFloat(valor) || 0;
+
+    if (campo === 'importanciaImpacto') {
+      const importanciaImpacto = parseFloat(valor) || 0;
+      const importanciaFrecuencia = 100 - importanciaImpacto;
+      nuevo[riesgo]['importanciaImpacto'] = importanciaImpacto;
+      nuevo[riesgo]['importanciaFrecuencia'] = importanciaFrecuencia;
+    } else {
+      nuevo[riesgo][campo] = parseFloat(valor) || 0;
+    }
+
     setRespuestas(nuevo);
   };
 
@@ -110,7 +119,7 @@ function Participante() {
     >
       <div
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)', // Más transparente
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
           padding: '40px',
           borderRadius: '12px',
           textAlign: 'center',
@@ -185,12 +194,12 @@ function Participante() {
                       <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
                     </div>
                     <div>
-                      <label>% Importancia Frecuencia</label>
-                      <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)} />
-                    </div>
-                    <div>
                       <label>% Importancia Impacto</label>
                       <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
+                    </div>
+                    <div>
+                      <label>% Importancia Frecuencia</label>
+                      <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} disabled />
                     </div>
                   </div>
                   <p className="text-sm mt-2 text-gray-800">
