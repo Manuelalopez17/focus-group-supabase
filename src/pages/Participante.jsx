@@ -16,6 +16,14 @@ const riesgosPorEtapa = {
   "Disposición final": ['Mal manejo de residuos', 'Falta de cierre documental']
 };
 
+const sesiones = [
+  "Simulación",
+  "Sesión 1",
+  "Sesión 2",
+  "Sesión 3",
+  "Sesión Final"
+];
+
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
   const [sesion, setSesion] = useState('Simulación');
@@ -86,13 +94,36 @@ function Participante() {
 
   return (
     <div
-      className="w-full h-screen bg-cover bg-center flex items-center justify-center"
-      style={{ backgroundImage: "url('/edificio.jpg')" }}
+      style={{
+        backgroundImage: 'url("/edificio.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+      }}
     >
-      <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-8 max-w-5xl w-full mx-4 overflow-y-auto">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">P6 – Proyecto Riesgos</h2>
+      <div
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          padding: '40px',
+          borderRadius: '12px',
+          textAlign: 'center',
+          maxWidth: '1100px',
+          width: '90%',
+          height: '90%',
+          overflowY: 'auto',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+        }}
+      >
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#222' }}>P6 – Proyecto Riesgos</h1>
+        <h2 style={{ fontSize: '1.1rem', color: '#444', marginBottom: '1rem' }}>
+          Evaluación de riesgos en construcción industrializada en madera
+        </h2>
 
-        {/* Datos del participante */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <input
             className="border p-2 rounded"
@@ -116,44 +147,39 @@ function Participante() {
           />
         </div>
 
-        {/* Selección de sesión y etapa */}
-        <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
-          <div className="w-full md:w-1/2">
-            <label className="block mb-1 font-semibold text-gray-800">Seleccione la sesión:</label>
-            <select
-              className="border p-2 rounded w-full"
-              value={sesion}
-              onChange={(e) => setSesion(e.target.value)}
-            >
-              <option value="Simulación">Simulación</option>
-              <option value="Sesión Final">Sesión Final</option>
-            </select>
-          </div>
-          <div className="w-full md:w-1/2">
-            <label className="block mb-1 font-semibold text-gray-800">Seleccione etapa del proyecto:</label>
-            <select
-              className="border p-2 rounded w-full"
-              value={etapaSeleccionada}
-              onChange={(e) => {
-                setEtapaSeleccionada(e.target.value);
-                setRespuestas({});
-              }}
-            >
-              <option value="">-- Seleccione --</option>
-              {Object.keys(riesgosPorEtapa).map((etapa) => (
-                <option key={etapa} value={etapa}>{etapa}</option>
-              ))}
-            </select>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <select
+            className="border p-2 rounded w-full"
+            value={sesion}
+            onChange={(e) => setSesion(e.target.value)}
+          >
+            {sesiones.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <select
+            className="border p-2 rounded w-full"
+            value={etapaSeleccionada}
+            onChange={(e) => {
+              setEtapaSeleccionada(e.target.value);
+              setRespuestas({});
+            }}
+          >
+            <option value="">-- Seleccione Etapa del Proyecto --</option>
+            {Object.keys(riesgosPorEtapa).map((etapa) => (
+              <option key={etapa} value={etapa}>{etapa}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Evaluación de riesgos */}
+        {/* Riesgos */}
         {riesgos.map((riesgo, index) => {
           const r = respuestas[riesgo] || {};
           const { scoreBase, scoreFinal } = calcularScore(r);
 
           return (
-            <div key={index} className="border p-4 mb-4 rounded bg-white shadow">
+            <div key={index} className="border p-4 mb-4 rounded bg-white shadow text-left">
               <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                 <div>
@@ -180,16 +206,22 @@ function Participante() {
           );
         })}
 
-        {/* Botón de envío */}
         {etapaSeleccionada && riesgos.length > 0 && (
-          <div className="text-center">
-            <button
-              onClick={handleSubmit}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded mt-4"
-            >
-              Enviar evaluación
-            </button>
-          </div>
+          <button
+            onClick={handleSubmit}
+            style={{
+              marginTop: '1rem',
+              padding: '12px 24px',
+              backgroundColor: '#1e90ff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Enviar evaluación
+          </button>
         )}
       </div>
     </div>
