@@ -1,30 +1,58 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <h1 className="text-3xl md:text-4xl font-bold text-center mb-6">
-        Focus Group – Riesgos en Construcción
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      textAlign: 'center',
+      background: 'linear-gradient(to bottom right, #f4f1ee, #d0e9d1)',
+      padding: '20px'
+    }}>
+      <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem', color: '#222' }}>
+        Focus Group – Proyectos P6
       </h1>
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '2rem', color: '#333' }}>
+        Evaluación de riesgos en construcción industrializada en madera
+      </h2>
       <img
-        src="/ciudadmadera.png"
-        alt="Logo del Proyecto"
-        className="w-64 md:w-80 mb-6 shadow-lg rounded-xl"
+        src="/proyecto.jpg"
+        alt="Logo del proyecto"
+        style={{ width: '300px', maxWidth: '80%', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginBottom: '2rem' }}
       />
-      <div className="flex gap-4">
+      <div style={{ display: 'flex', gap: '1rem' }}>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
-          onClick={() => navigate("/participante")}
+          onClick={() => navigate('/participante')}
+          style={{
+            backgroundColor: '#1e90ff',
+            color: '#fff',
+            padding: '10px 20px',
+            fontSize: '1rem',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
         >
-          Participante
+          Participar en Sesión
         </button>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
-          onClick={() => navigate("/moderador")}
+          onClick={() => navigate('/moderador')}
+          style={{
+            backgroundColor: '#9b59b6',
+            color: '#fff',
+            padding: '10px 20px',
+            fontSize: '1rem',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
         >
-          Moderador
+          Panel Administrador
         </button>
       </div>
     </div>
