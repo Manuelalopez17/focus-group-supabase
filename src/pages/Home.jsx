@@ -16,23 +16,26 @@ function Home() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
         backgroundImage: 'url("/edificio.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         display: 'flex',
-        alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        alignItems: 'center'
       }}
     >
       <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         padding: '40px',
         borderRadius: '12px',
         maxWidth: '600px',
-        width: '100%',
+        width: '90%',
         textAlign: 'center',
         boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
       }}>
