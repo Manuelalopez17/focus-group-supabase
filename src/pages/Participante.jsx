@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import '../index.css'; // Asegúrate de tener Tailwind configurado
 
 const riesgosPorEtapa = {
   "Suministro": ['Retraso en entrega de materiales', 'Falta de control de calidad en insumos'],
@@ -73,74 +74,86 @@ function Participante() {
   const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Evaluación de Riesgos – Participante</h2>
+    <div
+      className="min-h-screen w-full bg-cover bg-center flex flex-col items-center justify-start py-10 px-4"
+      style={{ backgroundImage: "url('/edificio.jpg')" }}
+    >
+      <div className="bg-white bg-opacity-80 rounded-lg shadow-lg p-6 w-full max-w-4xl">
+        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">P6 – Proyecto Riesgos</h2>
 
-      <label className="block mb-2 font-semibold">Seleccione la sesión:</label>
-      <select
-        className="border p-2 mb-4 rounded"
-        value={sesion}
-        onChange={(e) => setSesion(e.target.value)}
-      >
-        <option value="Simulación">Simulación</option>
-        <option value="Sesión Final">Sesión Final</option>
-      </select>
-
-      <label className="block mb-2 font-semibold">Seleccione etapa del proyecto:</label>
-      <select
-        className="border p-2 mb-6 rounded"
-        value={etapaSeleccionada}
-        onChange={(e) => {
-          setEtapaSeleccionada(e.target.value);
-          setRespuestas({});
-        }}
-      >
-        <option value="">-- Seleccione --</option>
-        {Object.keys(riesgosPorEtapa).map((etapa) => (
-          <option key={etapa} value={etapa}>{etapa}</option>
-        ))}
-      </select>
-
-      {riesgos.map((riesgo, index) => {
-        const r = respuestas[riesgo] || {};
-        const { scoreBase, scoreFinal } = calcularScore(r);
-
-        return (
-          <div key={index} className="border p-4 mb-4 rounded shadow-sm bg-white">
-            <p className="font-semibold mb-2">{riesgo}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
-              <div>
-                <label>Frecuencia (1-5)</label>
-                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
-              </div>
-              <div>
-                <label>Impacto (1-5)</label>
-                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
-              </div>
-              <div>
-                <label>% Importancia Frecuencia</label>
-                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)} />
-              </div>
-              <div>
-                <label>% Importancia Impacto</label>
-                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
-              </div>
-            </div>
-            <p className="text-sm mt-2">
-              <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
-            </p>
+        <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
+          <div>
+            <label className="block mb-1 font-semibold">Seleccione la sesión:</label>
+            <select
+              className="border p-2 rounded w-full"
+              value={sesion}
+              onChange={(e) => setSesion(e.target.value)}
+            >
+              <option value="Simulación">Simulación</option>
+              <option value="Sesión Final">Sesión Final</option>
+            </select>
           </div>
-        );
-      })}
+          <div>
+            <label className="block mb-1 font-semibold">Seleccione etapa del proyecto:</label>
+            <select
+              className="border p-2 rounded w-full"
+              value={etapaSeleccionada}
+              onChange={(e) => {
+                setEtapaSeleccionada(e.target.value);
+                setRespuestas({});
+              }}
+            >
+              <option value="">-- Seleccione --</option>
+              {Object.keys(riesgosPorEtapa).map((etapa) => (
+                <option key={etapa} value={etapa}>{etapa}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      {etapaSeleccionada && riesgos.length > 0 && (
-        <button
-          onClick={handleSubmit}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-4"
-        >
-          Enviar evaluación
-        </button>
-      )}
+        {riesgos.map((riesgo, index) => {
+          const r = respuestas[riesgo] || {};
+          const { scoreBase, scoreFinal } = calcularScore(r);
+
+          return (
+            <div key={index} className="border p-4 mb-4 rounded bg-white shadow">
+              <p className="font-semibold mb-2">{riesgo}</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                <div>
+                  <label>Frecuencia (1-5)</label>
+                  <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
+                </div>
+                <div>
+                  <label>Impacto (1-5)</label>
+                  <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
+                </div>
+                <div>
+                  <label>% Importancia Frecuencia</label>
+                  <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)} />
+                </div>
+                <div>
+                  <label>% Importancia Impacto</label>
+                  <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
+                </div>
+              </div>
+              <p className="text-sm mt-2">
+                <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
+              </p>
+            </div>
+          );
+        })}
+
+        {etapaSeleccionada && riesgos.length > 0 && (
+          <div className="text-center">
+            <button
+              onClick={handleSubmit}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded mt-4"
+            >
+              Enviar evaluación
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
