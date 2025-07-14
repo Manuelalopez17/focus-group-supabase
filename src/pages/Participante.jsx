@@ -19,6 +19,9 @@ const riesgosPorEtapa = {
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
   const [sesion, setSesion] = useState('Simulación');
+  const [nombre, setNombre] = useState('');
+  const [empresa, setEmpresa] = useState('');
+  const [experiencia, setExperiencia] = useState('');
   const [respuestas, setRespuestas] = useState({});
 
   const handleChange = (riesgo, campo, valor) => {
@@ -39,6 +42,11 @@ function Participante() {
   };
 
   const handleSubmit = async () => {
+    if (!nombre || !empresa || !experiencia || !etapaSeleccionada) {
+      alert("Por favor complete todos los campos del participante y seleccione una etapa.");
+      return;
+    }
+
     for (const riesgo of Object.keys(respuestas)) {
       const r = respuestas[riesgo];
       const { scoreBase, scoreFinal } = calcularScore(r);
@@ -53,7 +61,10 @@ function Participante() {
         importancia_frecuencia: r.importanciaFrecuencia,
         importancia_impacto: r.importanciaImpacto,
         score_base: scoreBase,
-        score_final: scoreFinal
+        score_final: scoreFinal,
+        nombre_participante: nombre,
+        empresa: empresa,
+        experiencia_anios: experiencia
       }]);
 
       if (error) {
@@ -66,6 +77,9 @@ function Participante() {
     alert('Respuestas enviadas con éxito.');
     setRespuestas({});
     setEtapaSeleccionada('');
+    setNombre('');
+    setEmpresa('');
+    setExperiencia('');
   };
 
   const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
@@ -78,6 +92,31 @@ function Participante() {
       <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-8 max-w-5xl w-full mx-4 overflow-y-auto">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">P6 – Proyecto Riesgos</h2>
 
+        {/* Datos del participante */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <input
+            className="border p-2 rounded"
+            placeholder="Nombre del participante"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded"
+            placeholder="Empresa"
+            value={empresa}
+            onChange={(e) => setEmpresa(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded"
+            placeholder="Años de experiencia"
+            type="number"
+            min="0"
+            value={experiencia}
+            onChange={(e) => setExperiencia(e.target.value)}
+          />
+        </div>
+
+        {/* Selección de sesión y etapa */}
         <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
           <div className="w-full md:w-1/2">
             <label className="block mb-1 font-semibold text-gray-800">Seleccione la sesión:</label>
@@ -108,6 +147,7 @@ function Participante() {
           </div>
         </div>
 
+        {/* Evaluación de riesgos */}
         {riesgos.map((riesgo, index) => {
           const r = respuestas[riesgo] || {};
           const { scoreBase, scoreFinal } = calcularScore(r);
@@ -134,12 +174,13 @@ function Participante() {
                 </div>
               </div>
               <p className="text-sm mt-2 text-gray-800">
-                <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
+                <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final:</strong> {scoreFinal.toFixed(2)}
               </p>
             </div>
           );
         })}
 
+        {/* Botón de envío */}
         {etapaSeleccionada && riesgos.length > 0 && (
           <div className="text-center">
             <button
