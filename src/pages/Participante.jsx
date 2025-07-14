@@ -1,148 +1,161 @@
-import { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { useEffect, useState } from 'react'
+import { supabase } from '../supabaseClient'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const riesgosPorEtapa = {
-  "Suministro": ['Retraso en entrega de materiales', 'Falta de control de calidad en insumos'],
-  "Prefactibilidad": ['Falta de estudios de mercado', 'Subestimación de costos iniciales'],
-  "Factibilidad": ['Cambios en regulaciones locales', 'Conflictos con la comunidad'],
-  "Planeación": ['Cronograma poco realista', 'Falta de coordinación entre actores'],
-  "Contratación": ['Errores en pliegos de condiciones', 'Desacuerdos contractuales'],
-  "Diseño": ['Errores en planos', 'Falta de revisión interdisciplinaria'],
-  "Fabricación": ['Fallos en control de calidad en fábrica', 'Demoras en producción'],
-  "Logística y Transporte": ['Daños por mala manipulación', 'Retrasos por clima'],
-  "Montaje": ['Falta de capacitación en obra', 'Problemas de alineación de elementos'],
-  "Construcción": ['Riesgos de seguridad', 'Errores de ejecución en obra'],
-  "Puesta en marcha": ['Falla en pruebas finales', 'Retrasos en aprobaciones'],
-  "Disposición final": ['Mal manejo de residuos', 'Falta de cierre documental']
-};
+function Moderador() {
+  const [respuestas, setRespuestas] = useState([])
+  const [sesionSeleccionada, setSesionSeleccionada] = useState('Simulación')
+  const [etapaSeleccionada, setEtapaSeleccionada] = useState('')
 
-function Participante() {
-  const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
-  const [sesion, setSesion] = useState('Simulación');
-  const [respuestas, setRespuestas] = useState({});
-
-  const handleChange = (riesgo, campo, valor) => {
-    const nuevo = { ...respuestas };
-    if (!nuevo[riesgo]) nuevo[riesgo] = {};
-    nuevo[riesgo][campo] = parseFloat(valor) || 0;
-    setRespuestas(nuevo);
-  };
-
-  const calcularScore = (r) => {
-    const f = r?.frecuencia || 0;
-    const i = r?.impacto || 0;
-    const impF = r?.importanciaFrecuencia || 0;
-    const impI = r?.importanciaImpacto || 0;
-    const scoreBase = f * i;
-    const scoreFinal = scoreBase * (impF + impI) / 100;
-    return { scoreBase, scoreFinal };
-  };
-
-  const handleSubmit = async () => {
-    for (const riesgo of Object.keys(respuestas)) {
-      const r = respuestas[riesgo];
-      const { scoreBase, scoreFinal } = calcularScore(r);
-
-      const { error } = await supabase.from('respuestas').insert([
-        {
-          timestamp: new Date().toISOString(),
-          etapa: etapaSeleccionada,
-          sesion: sesion,
-          riesgo,
-          frecuencia: r.frecuencia,
-          impacto: r.impacto,
-          importancia_frecuencia: r.importanciaFrecuencia,
-          importancia_impacto: r.importanciaImpacto,
-          score_base: scoreBase,
-          score_final: scoreFinal
-        }
-      ]);
-
-      if (error) {
-        console.error('Error en Supabase:', error);
-        alert(`Error al guardar el riesgo: ${riesgo}\n${error.message}`);
-        return;
-      }
+  useEffect(() => {
+    const obtenerDatos = async () => {
+      let query = supabase.from('respuestas').select('*').eq('sesion', sesionSeleccionada)
+      if (etapaSeleccionada) query = query.eq('etapa', etapaSeleccionada)
+      const { data, error } = await query.order('timestamp', { ascending: false })
+      if (!error) setRespuestas(data)
+      else console.error("Error al obtener datos:", error)
     }
 
-    alert('Respuestas enviadas con éxito.');
-    setRespuestas({});
-    setEtapaSeleccionada('');
-  };
+    obtenerDatos()
 
-  const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
+    const canal = supabase
+      .channel('realtime:risk-stream')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, (payload) => {
+        const nueva = payload.new
+        if (nueva?.sesion === sesionSeleccionada && (etapaSeleccionada === '' || nueva.etapa === etapaSeleccionada)) {
+          setRespuestas(prev => [nueva, ...prev])
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(canal) }
+  }, [sesionSeleccionada, etapaSeleccionada])
+
+  const etapasUnicas = [...new Set(respuestas.map(r => r.etapa))]
+
+  const riesgosAgrupados = respuestas.reduce((acc, r) => {
+    const clave = `${r.etapa}||${r.riesgo}`
+    if (!acc[clave]) acc[clave] = []
+    acc[clave].push(r)
+    return acc
+  }, {})
+
+  const resumen = Object.entries(riesgosAgrupados).map(([clave, items]) => {
+    const [etapa, riesgo] = clave.split('||')
+    const promedio = (campo) => items.reduce((acc, val) => acc + val[campo], 0) / items.length
+    const impacto = promedio('impacto')
+    const frecuencia = promedio('frecuencia')
+    const scoreBase = impacto * frecuencia
+    const scoreFinal = promedio('score_final')
+    return { etapa, riesgo, impacto, frecuencia, scoreBase, scoreFinal }
+  }).sort((a, b) => b.scoreFinal - a.scoreFinal)
+
+  const getColor = (impacto, frecuencia) => {
+    const matriz = [
+      ['#DFF0D8', '#DFF0D8', '#FCF8E3', '#F2DEDE', '#F2DEDE'],
+      ['#DFF0D8', '#FCF8E3', '#FCF8E3', '#F2DEDE', '#F2DEDE'],
+      ['#FCF8E3', '#FCF8E3', '#F2DEDE', '#F2DEDE', '#F2DEDE'],
+      ['#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE'],
+      ['#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE']
+    ]
+    return matriz[frecuencia - 1]?.[impacto - 1] || '#FFFFFF'
+  }
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Evaluación de Riesgos – Participante</h2>
+      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
 
-      <label className="block mb-2 font-semibold">Seleccione la sesión:</label>
-      <select
-        className="border p-2 mb-4 rounded"
-        value={sesion}
-        onChange={(e) => setSesion(e.target.value)}
-      >
-        <option value="Simulación">Simulación</option>
-        <option value="sesion final">Sesión Final</option>
-      </select>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <label className="font-semibold">Sesión:</label>
+        <select className="border p-1 rounded" value={sesionSeleccionada} onChange={(e) => setSesionSeleccionada(e.target.value)}>
+          <option value="Simulación">Simulación</option>
+          <option value="Sesión Final">Sesión Final</option>
+        </select>
 
-      <label className="block mb-2 font-semibold">Seleccione etapa del proyecto:</label>
-      <select
-        className="border p-2 mb-6 rounded"
-        value={etapaSeleccionada}
-        onChange={(e) => {
-          setEtapaSeleccionada(e.target.value);
-          setRespuestas({});
-        }}
-      >
-        <option value="">-- Seleccione --</option>
-        {Object.keys(riesgosPorEtapa).map((etapa) => (
-          <option key={etapa} value={etapa}>{etapa}</option>
-        ))}
-      </select>
+        <label className="font-semibold">Etapa:</label>
+        <select className="border p-1 rounded" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
+          <option value="">Todas</option>
+          {etapasUnicas.map((etapa, idx) => (
+            <option key={idx} value={etapa}>{etapa}</option>
+          ))}
+        </select>
 
-      {riesgos.map((riesgo, index) => {
-        const r = respuestas[riesgo] || {};
-        const { scoreBase, scoreFinal } = calcularScore(r);
+        <button className="bg-blue-500 text-white px-4 py-1 rounded" onClick={() => window.location.reload()}>Refrescar</button>
+      </div>
 
-        return (
-          <div key={index} className="border p-4 mb-4 rounded shadow-sm bg-white">
-            <p className="font-semibold mb-2">{riesgo}</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
-              <div>
-                <label>Frecuencia (1-5)</label>
-                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
-              </div>
-              <div>
-                <label>Impacto (1-5)</label>
-                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
-              </div>
-              <div>
-                <label>% Importancia Frecuencia</label>
-                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)} />
-              </div>
-              <div>
-                <label>% Importancia Impacto</label>
-                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
-              </div>
-            </div>
-            <p className="text-sm mt-2">
-              <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
-            </p>
-          </div>
-        );
-      })}
+      <h3 className="font-bold mt-4 mb-2">Registros en Tiempo Real</h3>
+      <table className="table-auto text-sm w-full border mb-6">
+        <thead>
+          <tr>
+            <th className="border px-2 py-1">Etapa</th>
+            <th className="border px-2 py-1">Riesgo</th>
+            <th className="border px-2 py-1">Impacto</th>
+            <th className="border px-2 py-1">Frecuencia</th>
+            <th className="border px-2 py-1">Importancia I</th>
+            <th className="border px-2 py-1">Importancia F</th>
+            <th className="border px-2 py-1">Score Final</th>
+          </tr>
+        </thead>
+        <tbody>
+          {respuestas.map((r, i) => (
+            <tr key={i}>
+              <td className="border px-2 py-1">{r.etapa}</td>
+              <td className="border px-2 py-1">{r.riesgo}</td>
+              <td className="border px-2 py-1">{r.impacto}</td>
+              <td className="border px-2 py-1">{r.frecuencia}</td>
+              <td className="border px-2 py-1">{r.importancia_impacto}</td>
+              <td className="border px-2 py-1">{r.importancia_frecuencia}</td>
+              <td className="border px-2 py-1">{r.score_final?.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      {etapaSeleccionada && riesgos.length > 0 && (
-        <button
-          onClick={handleSubmit}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-4"
-        >
-          Enviar evaluación
-        </button>
-      )}
+      <h3 className="font-bold mb-2">Ranking de Riesgos</h3>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={resumen.slice(0, 10)} layout="vertical" margin={{ left: 60 }}>
+          <XAxis type="number" />
+          <YAxis dataKey="riesgo" type="category" width={200} />
+          <Tooltip />
+          <Bar dataKey="scoreFinal">
+            {resumen.slice(0, 10).map((entry, index) => (
+              <Cell key={`cell-${index}`} fill="#82ca9d" />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+
+      <h3 className="font-bold mt-6 mb-2">Matriz de Riesgos (5x5)</h3>
+      <table className="border text-xs">
+        <thead>
+          <tr>
+            <th className="border px-2 py-1"> </th>
+            {[1, 2, 3, 4, 5].map(i => (
+              <th key={i} className="border px-2 py-1">Impacto {i}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[5, 4, 3, 2, 1].map(f => (
+            <tr key={f}>
+              <th className="border px-2 py-1">Frecuencia {f}</th>
+              {[1, 2, 3, 4, 5].map(i => {
+                const riesgosCelda = resumen.filter(r => Math.round(r.impacto) === i && Math.round(r.frecuencia) === f)
+                return (
+                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }} className="border p-1 text-center">
+                    <div className="font-bold">{riesgosCelda.length}</div>
+                    {riesgosCelda.map(r => (
+                      <div key={r.riesgo} className="text-xs">{r.riesgo}</div>
+                    ))}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
-  );
+  )
 }
 
-export default Participante;
+export default Moderador
