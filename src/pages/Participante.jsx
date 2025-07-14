@@ -58,8 +58,8 @@ function Participante() {
       ]);
 
       if (error) {
-        console.error(`Error guardando ${riesgo}:`, error.message);
-        alert(`Error al guardar el riesgo: ${riesgo}`);
+        console.error('Error en Supabase:', error);
+        alert(`Error al guardar el riesgo: ${riesgo}\n${error.message}`);
         return;
       }
     }
