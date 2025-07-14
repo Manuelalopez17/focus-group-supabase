@@ -26,14 +26,14 @@ function Moderador() {
   }
 
   const riesgosAgrupados = respuestas.reduce((acc, r) => {
-    const clave = `${r.etapa}-${r.riesgo}`
+    const clave = `${r.etapa}||${r.riesgo}`
     if (!acc[clave]) acc[clave] = []
     acc[clave].push(r)
     return acc
   }, {})
 
   const resumen = Object.entries(riesgosAgrupados).map(([clave, items]) => {
-    const [etapa, riesgo] = clave.split('-')
+    const [etapa, riesgo] = clave.split('||')
     const promedio = (campo) => items.reduce((acc, val) => acc + val[campo], 0) / items.length
     const impacto = promedio('impacto')
     const frecuencia = promedio('frecuencia')
@@ -54,8 +54,8 @@ function Moderador() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2 className="text-xl font-bold mb-4">Panel del Moderador</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
 
       <label className="font-semibold mr-2">Seleccionar sesión:</label>
       <select
@@ -68,26 +68,26 @@ function Moderador() {
       </select>
 
       <h3 className="font-bold mt-6 mb-2">Ranking de Riesgos</h3>
-      <table border="1" cellPadding="5" className="mb-6 w-full">
+      <table className="table-auto w-full text-sm mb-6 border">
         <thead>
           <tr>
-            <th>Etapa</th>
-            <th>Riesgo</th>
-            <th>Impacto</th>
-            <th>Frecuencia</th>
-            <th>Score Base</th>
-            <th>Score Final</th>
+            <th className="border px-2 py-1">Etapa</th>
+            <th className="border px-2 py-1">Riesgo</th>
+            <th className="border px-2 py-1">Impacto</th>
+            <th className="border px-2 py-1">Frecuencia</th>
+            <th className="border px-2 py-1">Score Base</th>
+            <th className="border px-2 py-1">Score Final</th>
           </tr>
         </thead>
         <tbody>
           {resumen.map((r, idx) => (
             <tr key={idx}>
-              <td>{r.etapa}</td>
-              <td>{r.riesgo}</td>
-              <td>{r.impacto.toFixed(2)}</td>
-              <td>{r.frecuencia.toFixed(2)}</td>
-              <td>{r.scoreBase.toFixed(2)}</td>
-              <td>{r.scoreFinal.toFixed(2)}</td>
+              <td className="border px-2 py-1">{r.etapa}</td>
+              <td className="border px-2 py-1">{r.riesgo}</td>
+              <td className="border px-2 py-1">{r.impacto.toFixed(2)}</td>
+              <td className="border px-2 py-1">{r.frecuencia.toFixed(2)}</td>
+              <td className="border px-2 py-1">{r.scoreBase.toFixed(2)}</td>
+              <td className="border px-2 py-1">{r.scoreFinal.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -108,23 +108,25 @@ function Moderador() {
       </ResponsiveContainer>
 
       <h3 className="font-bold mt-6 mb-2">Matriz de Riesgos (5x5)</h3>
-      <table border="1" cellPadding="10">
+      <table className="border text-xs">
         <thead>
           <tr>
-            <th></th>
-            {[1, 2, 3, 4, 5].map(i => <th key={i}>Impacto {i}</th>)}
+            <th className="border px-2 py-1"> </th>
+            {[1, 2, 3, 4, 5].map(i => (
+              <th key={i} className="border px-2 py-1">Impacto {i}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {[5, 4, 3, 2, 1].map(f => (
             <tr key={f}>
-              <th>Frecuencia {f}</th>
+              <th className="border px-2 py-1">Frecuencia {f}</th>
               {[1, 2, 3, 4, 5].map(i => {
                 const riesgosCelda = resumen.filter(r => Math.round(r.impacto) === i && Math.round(r.frecuencia) === f)
                 return (
-                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }}>
+                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }} className="border p-1">
                     {riesgosCelda.map(r => (
-                      <div key={r.riesgo} style={{ fontSize: '12px' }}>{r.riesgo}</div>
+                      <div key={r.riesgo}>{r.riesgo}</div>
                     ))}
                   </td>
                 )
