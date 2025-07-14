@@ -1,57 +1,35 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from "react-router-dom";
 
 function Home() {
+  const navigate = useNavigate();
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#f8f9fa',
-      padding: '20px'
-    }}>
-      <h1 style={{
-        fontSize: '2.5rem',
-        color: '#1a1a1a',
-        marginBottom: '20px',
-        textAlign: 'center'
-      }}>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <h1 className="text-3xl md:text-4xl font-bold text-center mb-6">
         Focus Group – Riesgos en Construcción
       </h1>
-
       <img
-        src="/proyecto.jpg"
-        alt="Imagen del Proyecto"
-        style={{
-          width: '300px',
-          borderRadius: '10px',
-          marginBottom: '30px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-        }}
+        src="/ciudadmadera.png"
+        alt="Logo del Proyecto"
+        className="w-64 md:w-80 mb-6 shadow-lg rounded-xl"
       />
-
-      <div style={{ display: 'flex', gap: '20px' }}>
-        <Link to="/participante">
-          <button style={botonEstilo}>Participante</button>
-        </Link>
-        <Link to="/moderador">
-          <button style={botonEstilo}>Moderador</button>
-        </Link>
+      <div className="flex gap-4">
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
+          onClick={() => navigate("/participante")}
+        >
+          Participante
+        </button>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
+          onClick={() => navigate("/moderador")}
+        >
+          Moderador
+        </button>
       </div>
     </div>
-  )
+  );
 }
 
-const botonEstilo = {
-  padding: '12px 24px',
-  fontSize: '16px',
-  borderRadius: '8px',
-  border: 'none',
-  backgroundColor: '#007bff',
-  color: 'white',
-  cursor: 'pointer',
-  transition: 'background-color 0.3s ease'
-}
+export default Home;
 
-export default Home
