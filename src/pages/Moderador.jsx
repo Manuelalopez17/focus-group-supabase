@@ -4,21 +4,25 @@ import { supabase } from '../supabaseClient';
 function Moderador() {
   const [respuestas, setRespuestas] = useState([]);
 
-  const fetchRespuestas = async () => {
-    const { data, error } = await supabase
-      .from('respuestas')
-      .select('*')
-      .order('timestamp', { ascending: false });
-
-    if (!error) setRespuestas(data);
-    else console.error('Error cargando respuestas:', error);
-  };
-
   useEffect(() => {
-    fetchRespuestas(); // carga inicial
+    const fetchRespuestas = async () => {
+      const { data, error } = await supabase
+        .from('respuestas')
+        .select('*')
+        .order('timestamp', { ascending: false });
 
-    const channel = supabase
-      .channel('realtime_riesgos')
+      if (!error) {
+        setRespuestas(data);
+      } else {
+        console.error('Error cargando datos:', error);
+      }
+    };
+
+    fetchRespuestas(); // Carga inicial
+
+    // Suscripción en tiempo real
+    const canal = supabase
+      .channel('realtime_respuestas')
       .on(
         'postgres_changes',
         {
@@ -27,20 +31,23 @@ function Moderador() {
           table: 'respuestas',
         },
         (payload) => {
+          // Agrega la nueva respuesta al inicio
           setRespuestas((prev) => [payload.new, ...prev]);
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(canal);
     };
   }, []);
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
-      <table border="1" cellPadding="5">
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+        Panel del Moderador
+      </h2>
+      <table border="1" cellPadding="5" style={{ width: '100%' }}>
         <thead>
           <tr>
             <th>Etapa</th>
@@ -59,7 +66,6 @@ function Moderador() {
             const base = r.impacto * r.frecuencia;
             const final =
               base * ((r.importancia_impacto / 5 + r.importancia_frecuencia / 5) / 2);
-
             return (
               <tr key={r.id}>
                 <td>{r.etapa}</td>
