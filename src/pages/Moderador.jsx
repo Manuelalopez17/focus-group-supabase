@@ -9,17 +9,11 @@ function Moderador() {
 
   useEffect(() => {
     const obtenerDatos = async () => {
-      const { data, error } = await supabase
-        .from('respuestas')
-        .select('*')
-        .eq('sesion', sesionSeleccionada)
-        .order('timestamp', { ascending: false })
-
-      if (!error) {
-        setRespuestas(data)
-      } else {
-        console.error("Error al obtener datos:", error)
-      }
+      let query = supabase.from('respuestas').select('*').eq('sesion', sesionSeleccionada)
+      if (etapaSeleccionada) query = query.eq('etapa', etapaSeleccionada)
+      const { data, error } = await query.order('timestamp', { ascending: false })
+      if (!error) setRespuestas(data)
+      else console.error("Error al obtener datos:", error)
     }
 
     obtenerDatos()
@@ -33,17 +27,12 @@ function Moderador() {
       })
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(canal)
-    }
-  }, [sesionSeleccionada])
+    return () => { supabase.removeChannel(canal) }
+  }, [sesionSeleccionada, etapaSeleccionada])
 
-  const etapasDisponibles = [...new Set(respuestas.map(r => r.etapa))]
-  const respuestasFiltradas = etapaSeleccionada
-    ? respuestas.filter(r => r.etapa === etapaSeleccionada)
-    : respuestas
+  const etapasUnicas = [...new Set(respuestas.map(r => r.etapa))]
 
-  const riesgosAgrupados = respuestasFiltradas.reduce((acc, r) => {
+  const riesgosAgrupados = respuestas.reduce((acc, r) => {
     const clave = `${r.etapa}||${r.riesgo}`
     if (!acc[clave]) acc[clave] = []
     acc[clave].push(r)
@@ -75,60 +64,51 @@ function Moderador() {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
 
-      <label className="font-semibold mr-2">Seleccionar sesión:</label>
-      <select
-        className="border p-1 rounded mb-4"
-        value={sesionSeleccionada}
-        onChange={(e) => setSesionSeleccionada(e.target.value)}
-      >
-        <option value="Simulación">Simulación</option>
-        <option value="Sesión Final">Sesión Final</option>
-      </select>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <label className="font-semibold">Sesión:</label>
+        <select className="border p-1 rounded" value={sesionSeleccionada} onChange={(e) => setSesionSeleccionada(e.target.value)}>
+          <option value="Simulación">Simulación</option>
+          <option value="Sesión Final">Sesión Final</option>
+        </select>
 
-      <label className="font-semibold mr-2">Seleccionar etapa:</label>
-      <select
-        className="border p-1 rounded mb-4"
-        value={etapaSeleccionada}
-        onChange={(e) => setEtapaSeleccionada(e.target.value)}
-      >
-        <option value="">-- Todas las etapas --</option>
-        {etapasDisponibles.map((etapa, idx) => (
-          <option key={idx} value={etapa}>{etapa}</option>
-        ))}
-      </select>
+        <label className="font-semibold">Etapa:</label>
+        <select className="border p-1 rounded" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
+          <option value="">Todas</option>
+          {etapasUnicas.map((etapa, idx) => (
+            <option key={idx} value={etapa}>{etapa}</option>
+          ))}
+        </select>
+      </div>
 
-      <button
-        onClick={() => window.location.reload()}
-        className="mb-4 ml-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >🔄 Recargar</button>
-
-      <h3 className="font-bold mt-6 mb-2">Ranking de Riesgos</h3>
-      <table className="table-auto w-full text-sm mb-6 border">
+      <h3 className="font-bold mt-4 mb-2">Registros en Tiempo Real</h3>
+      <table className="table-auto text-sm w-full border mb-6">
         <thead>
           <tr>
             <th className="border px-2 py-1">Etapa</th>
             <th className="border px-2 py-1">Riesgo</th>
             <th className="border px-2 py-1">Impacto</th>
             <th className="border px-2 py-1">Frecuencia</th>
-            <th className="border px-2 py-1">Score Base</th>
+            <th className="border px-2 py-1">Importancia I</th>
+            <th className="border px-2 py-1">Importancia F</th>
             <th className="border px-2 py-1">Score Final</th>
           </tr>
         </thead>
         <tbody>
-          {resumen.map((r, idx) => (
-            <tr key={idx}>
+          {respuestas.map((r, i) => (
+            <tr key={i}>
               <td className="border px-2 py-1">{r.etapa}</td>
               <td className="border px-2 py-1">{r.riesgo}</td>
-              <td className="border px-2 py-1">{r.impacto.toFixed(2)}</td>
-              <td className="border px-2 py-1">{r.frecuencia.toFixed(2)}</td>
-              <td className="border px-2 py-1">{r.scoreBase.toFixed(2)}</td>
-              <td className="border px-2 py-1">{r.scoreFinal.toFixed(2)}</td>
+              <td className="border px-2 py-1">{r.impacto}</td>
+              <td className="border px-2 py-1">{r.frecuencia}</td>
+              <td className="border px-2 py-1">{r.importancia_impacto}</td>
+              <td className="border px-2 py-1">{r.importancia_frecuencia}</td>
+              <td className="border px-2 py-1">{r.score_final?.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <h3 className="font-bold mb-2">Gráfico de Score Final</h3>
+      <h3 className="font-bold mb-2">Ranking de Riesgos</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={resumen.slice(0, 10)} layout="vertical" margin={{ left: 60 }}>
           <XAxis type="number" />
