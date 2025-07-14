@@ -1,3 +1,4 @@
+// src/pages/Participante.jsx
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
@@ -42,8 +43,9 @@ function Participante() {
       const r = respuestas[riesgo];
       const { scoreBase, scoreFinal } = calcularScore(r);
 
-      await supabase.from('respuestas').insert([
+      const { error } = await supabase.from('respuestas').insert([
         {
+          timestamp: new Date().toISOString(),
           etapa: etapaSeleccionada,
           riesgo,
           frecuencia: r.frecuencia,
@@ -54,7 +56,14 @@ function Participante() {
           score_final: scoreFinal
         }
       ]);
+
+      if (error) {
+        console.error(`Error guardando ${riesgo}:`, error.message);
+        alert(`Error al guardar el riesgo: ${riesgo}`);
+        return;
+      }
     }
+
     alert('Respuestas enviadas con éxito.');
     setRespuestas({});
     setEtapaSeleccionada('');
