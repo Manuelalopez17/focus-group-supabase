@@ -1,7 +1,17 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 function Home() {
   const navigate = useNavigate();
+  const [sesion, setSesion] = useState('');
+
+  const irAParticipante = () => {
+    if (!sesion) {
+      alert('Por favor seleccione una sesión.');
+      return;
+    }
+    navigate(`/participante?sesion=${encodeURIComponent(sesion)}`);
+  };
 
   return (
     <div style={{
@@ -9,11 +19,14 @@ function Home() {
       background: 'linear-gradient(to bottom right, #f4f1ee, #d0e9d1)',
       display: 'flex',
       flexDirection: 'column',
-      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
       padding: '20px',
+      textAlign: 'center',
+      position: 'relative',
       boxSizing: 'border-box'
     }}>
-      {/* LOGO en la esquina superior izquierda */}
+      {/* LOGO SUPERIOR IZQUIERDA */}
       <img
         src="/proyecto.jpg"
         alt="Logo del Proyecto"
@@ -28,68 +41,56 @@ function Home() {
         }}
       />
 
-      {/* CONTENIDO CENTRAL */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-        paddingTop: '40px' // para no tapar con el logo
+      <h1 style={{
+        fontSize: '2.8rem',
+        fontWeight: 'bold',
+        color: '#222',
+        marginBottom: '1rem'
       }}>
-        <h1 style={{
-          fontSize: '2.5rem',
-          fontWeight: 'bold',
-          color: '#222',
-          marginBottom: '1rem'
-        }}>
-          Focus Group – Proyectos P6
-        </h1>
-        <h2 style={{
-          fontSize: '1.3rem',
-          color: '#333',
-          marginBottom: '2.5rem',
-          maxWidth: '90%',
-          lineHeight: '1.5'
-        }}>
-          Evaluación de riesgos en construcción industrializada en madera
-        </h2>
+        Focus Group – Proyectos P6
+      </h1>
+      <h2 style={{
+        fontSize: '1.4rem',
+        color: '#333',
+        marginBottom: '2rem',
+        maxWidth: '90%',
+        lineHeight: '1.5'
+      }}>
+        Evaluación de riesgos en construcción industrializada en madera
+      </h2>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={() => navigate('/participante')}
-            style={{
-              padding: '12px 24px',
-              fontSize: '1rem',
-              backgroundColor: '#1e90ff',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
-          >
-            Participar en Sesión
-          </button>
-
-          <button
-            onClick={() => navigate('/moderador')}
-            style={{
-              padding: '12px 24px',
-              fontSize: '1rem',
-              backgroundColor: '#9b59b6',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
-          >
-            Panel Administrador
-          </button>
-        </div>
+      {/* SELECCIÓN DE SESIÓN */}
+      <div style={{ marginBottom: '2rem' }}>
+        <label style={{ fontWeight: 'bold', marginRight: '10px' }}>Seleccione una sesión:</label>
+        <select
+          value={sesion}
+          onChange={(e) => setSesion(e.target.value)}
+          style={{ padding: '10px', borderRadius: '6px' }}
+        >
+          <option value="">-- Seleccionar --</option>
+          <option value="Simulación">Simulación</option>
+          <option value="Sesión 1">Sesión 1</option>
+          <option value="Sesión 2">Sesión 2</option>
+          <option value="Sesión Final">Sesión Final</option>
+        </select>
       </div>
+
+      {/* BOTÓN DE INGRESO */}
+      <button
+        onClick={irAParticipante}
+        style={{
+          padding: '12px 24px',
+          fontSize: '1rem',
+          backgroundColor: '#1e90ff',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          minWidth: '200px'
+        }}
+      >
+        Participar en Sesión
+      </button>
     </div>
   );
 }
