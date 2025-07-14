@@ -16,15 +16,17 @@ function Home() {
   return (
     <div style={{
       minHeight: '100vh',
+      width: '100vw',
       background: 'linear-gradient(to bottom right, #f4f1ee, #d0e9d1)',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
       justifyContent: 'center',
+      alignItems: 'center',
       padding: '20px',
       textAlign: 'center',
       position: 'relative',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      overflowX: 'hidden'
     }}>
       {/* LOGO SUPERIOR IZQUIERDA */}
       <img
