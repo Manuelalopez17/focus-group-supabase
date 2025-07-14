@@ -1,170 +1,120 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Bar } from 'react-chartjs-2'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 function Moderador() {
   const [respuestas, setRespuestas] = useState([])
+  const [sesionSeleccionada, setSesionSeleccionada] = useState('simulacion')
 
   useEffect(() => {
     fetchRespuestas()
+
     const subscription = supabase
       .channel('realtime_riesgos')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'respuestas'
-      }, () => {
-        fetchRespuestas()
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'respuestas' },
+        () => {
+          fetchRespuestas()
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(subscription)
     }
-  }, [])
+  }, [sesionSeleccionada])
 
   const fetchRespuestas = async () => {
     const { data, error } = await supabase
       .from('respuestas')
       .select('*')
-      .order('timestamp', { ascending: false })
+      .eq('sesion', sesionSeleccionada)
 
-    if (!error) setRespuestas(data)
+    if (!error && data) setRespuestas(data)
   }
 
-  // Calcular promedios por riesgo
   const calcularPromedios = () => {
-    const agrupado = {}
-    respuestas.forEach(r => {
-      const clave = `${r.etapa} - ${r.riesgo}`
-      const base = r.impacto * r.frecuencia
-      const final = base * ((r.importancia_impacto / 5 + r.importancia_frecuencia / 5) / 2)
-
-      if (!agrupado[clave]) {
-        agrupado[clave] = { total: 0, count: 0 }
+    const agrupados = {}
+    for (const r of respuestas) {
+      const clave = `${r.etapa}||${r.riesgo}`
+      if (!agrupados[clave]) {
+        agrupados[clave] = {
+          etapa: r.etapa,
+          riesgo: r.riesgo,
+          frecuencia: [],
+          impacto: [],
+          importancia_frecuencia: [],
+          importancia_impacto: []
+        }
       }
+      agrupados[clave].frecuencia.push(r.frecuencia)
+      agrupados[clave].impacto.push(r.impacto)
+      agrupados[clave].importancia_frecuencia.push(r.importancia_frecuencia)
+      agrupados[clave].importancia_impacto.push(r.importancia_impacto)
+    }
 
-      agrupado[clave].total += final
-      agrupado[clave].count += 1
-    })
+    return Object.values(agrupados).map((grupo) => {
+      const promedio = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length
+      const frecuencia = promedio(grupo.frecuencia)
+      const impacto = promedio(grupo.impacto)
+      const importancia_frecuencia = promedio(grupo.importancia_frecuencia)
+      const importancia_impacto = promedio(grupo.importancia_impacto)
+      const score_base = frecuencia * impacto
+      const score_final = score_base * (importancia_frecuencia + importancia_impacto) / 100
 
-    const etiquetas = Object.keys(agrupado)
-    const valores = etiquetas.map(k => (agrupado[k].total / agrupado[k].count).toFixed(2))
-
-    return { etiquetas, valores }
+      return {
+        etapa: grupo.etapa,
+        riesgo: grupo.riesgo,
+        frecuencia: frecuencia.toFixed(2),
+        impacto: impacto.toFixed(2),
+        importancia_frecuencia: importancia_frecuencia.toFixed(2),
+        importancia_impacto: importancia_impacto.toFixed(2),
+        score_base: score_base.toFixed(2),
+        score_final: score_final.toFixed(2)
+      }
+    }).sort((a, b) => b.score_final - a.score_final)
   }
 
-  const { etiquetas, valores } = calcularPromedios()
+  const promedios = calcularPromedios()
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>Panel del Moderador</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
 
-      {/* Sección 1: Tabla de respuestas */}
-      <h3>Respuestas en tiempo real</h3>
-      <table border="1" cellPadding="5">
+      <label className="block mb-2 font-semibold">Seleccionar sesión:</label>
+      <select
+        className="border p-2 mb-6 rounded"
+        value={sesionSeleccionada}
+        onChange={(e) => setSesionSeleccionada(e.target.value)}
+      >
+        <option value="simulacion">Simulación</option>
+        <option value="sesion_final">Sesión Final</option>
+      </select>
+
+      <table className="table-auto w-full border-collapse border border-gray-400">
         <thead>
-          <tr>
-            <th>Etapa</th>
-            <th>Riesgo</th>
-            <th>Impacto</th>
-            <th>Frecuencia</th>
-            <th>Score Base</th>
-            <th>Importancia I</th>
-            <th>Importancia F</th>
-            <th>Score Final</th>
-            <th>Fecha</th>
+          <tr className="bg-gray-200">
+            <th className="border px-2 py-1">Etapa</th>
+            <th className="border px-2 py-1">Riesgo</th>
+            <th className="border px-2 py-1">Frecuencia</th>
+            <th className="border px-2 py-1">Impacto</th>
+            <th className="border px-2 py-1">Importancia F</th>
+            <th className="border px-2 py-1">Importancia I</th>
+            <th className="border px-2 py-1">Score Base</th>
+            <th className="border px-2 py-1">Score Final</th>
           </tr>
         </thead>
         <tbody>
-          {respuestas.map((r) => {
-            const base = r.impacto * r.frecuencia
-            const final =
-              base * ((r.importancia_impacto / 5 + r.importancia_frecuencia / 5) / 2)
-            return (
-              <tr key={r.id}>
-                <td>{r.etapa}</td>
-                <td>{r.riesgo}</td>
-                <td>{r.impacto}</td>
-                <td>{r.frecuencia}</td>
-                <td>{base}</td>
-                <td>{r.importancia_impacto}</td>
-                <td>{r.importancia_frecuencia}</td>
-                <td>{final.toFixed(2)}</td>
-                <td>{new Date(r.timestamp).toLocaleString()}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-
-      {/* Sección 2: Gráfico de barras */}
-      <h3 style={{ marginTop: '40px' }}>Promedio de Score Final por Riesgo</h3>
-      <div style={{ width: '100%', maxWidth: '900px' }}>
-        <Bar
-          data={{
-            labels: etiquetas,
-            datasets: [
-              {
-                label: 'Score Final Promedio',
-                data: valores,
-                backgroundColor: 'rgba(75, 192, 192, 0.7)'
-              }
-            ]
-          }}
-          options={{
-            responsive: true,
-            plugins: {
-              legend: {
-                display: false
-              },
-              title: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true
-              }
-            }
-          }}
-        />
-      </div>
-
-      {/* Sección 3: Matriz 5x5 */}
-      <h3 style={{ marginTop: '40px' }}>Matriz 5x5 – Impacto vs. Frecuencia</h3>
-      <table border="1" cellPadding="8">
-        <thead>
-          <tr>
-            <th></th>
-            {[1, 2, 3, 4, 5].map(f => <th key={f}>F{f}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {[5, 4, 3, 2, 1].map(i => (
-            <tr key={i}>
-              <th>I{i}</th>
-              {[1, 2, 3, 4, 5].map(f => {
-                const riesgos = respuestas.filter(r => r.impacto === i && r.frecuencia === f)
-                return (
-                  <td key={`${i}-${f}`} style={{ width: '100px', height: '60px', fontSize: '10px' }}>
-                    {riesgos.map(r => (
-                      <div key={r.id}>{r.riesgo}</div>
-                    ))}
-                  </td>
-                )
-              })}
+          {promedios.map((r, index) => (
+            <tr key={index}>
+              <td className="border px-2 py-1">{r.etapa}</td>
+              <td className="border px-2 py-1">{r.riesgo}</td>
+              <td className="border px-2 py-1">{r.frecuencia}</td>
+              <td className="border px-2 py-1">{r.impacto}</td>
+              <td className="border px-2 py-1">{r.importancia_frecuencia}</td>
+              <td className="border px-2 py-1">{r.importancia_impacto}</td>
+              <td className="border px-2 py-1">{r.score_base}</td>
+              <td className="border px-2 py-1 font-bold">{r.score_final}</td>
             </tr>
           ))}
         </tbody>
