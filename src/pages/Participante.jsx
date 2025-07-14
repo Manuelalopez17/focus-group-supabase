@@ -1,21 +1,19 @@
 import { useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 const riesgosPorEtapa = {
-  Diseño: [
-    'Riesgo 1 en Diseño',
-    'Riesgo 2 en Diseño',
-    'Riesgo 3 en Diseño'
-  ],
-  Construcción: [
-    'Riesgo 1 en Construcción',
-    'Riesgo 2 en Construcción',
-    'Riesgo 3 en Construcción'
-  ],
-  Industrialización: [
-    'Riesgo 1 en Industrialización',
-    'Riesgo 2 en Industrialización',
-    'Riesgo 3 en Industrialización'
-  ]
+  "Suministro": ['Retraso en entrega de materiales', 'Falta de control de calidad en insumos'],
+  "Prefactibilidad": ['Falta de estudios de mercado', 'Subestimación de costos iniciales'],
+  "Factibilidad": ['Cambios en regulaciones locales', 'Conflictos con la comunidad'],
+  "Planeación": ['Cronograma poco realista', 'Falta de coordinación entre actores'],
+  "Contratación": ['Errores en pliegos de condiciones', 'Desacuerdos contractuales'],
+  "Diseño": ['Errores en planos', 'Falta de revisión interdisciplinaria'],
+  "Fabricación": ['Fallos en control de calidad en fábrica', 'Demoras en producción'],
+  "Logística y Transporte": ['Daños por mala manipulación', 'Retrasos por clima'],
+  "Montaje": ['Falta de capacitación en obra', 'Problemas de alineación de elementos'],
+  "Construcción": ['Riesgos de seguridad', 'Errores de ejecución en obra'],
+  "Puesta en marcha": ['Falla en pruebas finales', 'Retrasos en aprobaciones'],
+  "Disposición final": ['Mal manejo de residuos', 'Falta de cierre documental']
 };
 
 function Participante() {
@@ -39,6 +37,29 @@ function Participante() {
     return { scoreBase, scoreFinal };
   };
 
+  const handleSubmit = async () => {
+    for (const riesgo of Object.keys(respuestas)) {
+      const r = respuestas[riesgo];
+      const { scoreBase, scoreFinal } = calcularScore(r);
+
+      await supabase.from('respuestas').insert([
+        {
+          etapa: etapaSeleccionada,
+          riesgo,
+          frecuencia: r.frecuencia,
+          impacto: r.impacto,
+          importancia_frecuencia: r.importanciaFrecuencia,
+          importancia_impacto: r.importanciaImpacto,
+          score_base: scoreBase,
+          score_final: scoreFinal
+        }
+      ]);
+    }
+    alert('Respuestas enviadas con éxito.');
+    setRespuestas({});
+    setEtapaSeleccionada('');
+  };
+
   const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
 
   return (
@@ -56,9 +77,7 @@ function Participante() {
       >
         <option value="">-- Seleccione --</option>
         {Object.keys(riesgosPorEtapa).map((etapa) => (
-          <option key={etapa} value={etapa}>
-            {etapa}
-          </option>
+          <option key={etapa} value={etapa}>{etapa}</option>
         ))}
       </select>
 
@@ -69,60 +88,39 @@ function Participante() {
         return (
           <div key={index} className="border p-4 mb-4 rounded shadow-sm bg-white">
             <p className="font-semibold mb-2">{riesgo}</p>
-
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
               <div>
                 <label>Frecuencia (1-5)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  className="border w-full p-1 rounded"
-                  value={r.frecuencia || ''}
-                  onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)}
-                />
+                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
               </div>
               <div>
                 <label>Impacto (1-5)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  className="border w-full p-1 rounded"
-                  value={r.impacto || ''}
-                  onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)}
-                />
+                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
               </div>
               <div>
                 <label>% Importancia Frecuencia</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="border w-full p-1 rounded"
-                  value={r.importanciaFrecuencia || ''}
-                  onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)}
-                />
+                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} onChange={(e) => handleChange(riesgo, 'importanciaFrecuencia', e.target.value)} />
               </div>
               <div>
                 <label>% Importancia Impacto</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="border w-full p-1 rounded"
-                  value={r.importanciaImpacto || ''}
-                  onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)}
-                />
+                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
               </div>
             </div>
-
             <p className="text-sm mt-2">
               <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
             </p>
           </div>
         );
       })}
+
+      {etapaSeleccionada && riesgos.length > 0 && (
+        <button
+          onClick={handleSubmit}
+          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mt-4"
+        >
+          Enviar evaluación
+        </button>
+      )}
     </div>
   );
 }
