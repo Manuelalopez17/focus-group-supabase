@@ -20,6 +20,7 @@ const riesgosPorEtapa = {
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
   const [respuestas, setRespuestas] = useState({});
+  const sesion = 'simulacion'; // Cambia a 'sesion-final' en el día oficial
 
   const handleChange = (riesgo, campo, valor) => {
     const nuevo = { ...respuestas };
@@ -53,7 +54,8 @@ function Participante() {
           importancia_frecuencia: r.importanciaFrecuencia,
           importancia_impacto: r.importanciaImpacto,
           score_base: scoreBase,
-          score_final: scoreFinal
+          score_final: scoreFinal,
+          sesion // <--- se registra la sesión actual
         }
       ]);
 
