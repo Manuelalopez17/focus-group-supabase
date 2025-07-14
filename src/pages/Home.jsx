@@ -6,21 +6,22 @@ function Home() {
   return (
     <div
       style={{
+        background: 'linear-gradient(to bottom right, #f7f5f0, #d0e9d1)',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh',
+        textAlign: 'center',
         padding: '2rem',
-        background: 'linear-gradient(to right, #f4f1ee 0%, #d0e9d1 100%)',
         boxSizing: 'border-box',
       }}
     >
-      <h1 style={{ fontSize: '2.8rem', textAlign: 'center', fontWeight: 'bold', marginBottom: '1rem', color: '#222' }}>
+      <h1 style={{ fontSize: '2.8rem', fontWeight: 'bold', marginBottom: '1rem', color: '#2c2c2c' }}>
         Focus Group – Proyectos P6
       </h1>
 
-      <h2 style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '2rem', color: '#333' }}>
+      <h2 style={{ fontSize: '1.3rem', marginBottom: '2rem', color: '#333' }}>
         Evaluación de riesgos en construcción industrializada en madera
       </h2>
 
@@ -28,9 +29,9 @@ function Home() {
         src="/proyecto.jpg"
         alt="Logo del Proyecto"
         style={{
-          width: '300px',
+          width: '280px',
           maxWidth: '100%',
-          marginBottom: '2rem',
+          marginBottom: '2.5rem',
           borderRadius: '12px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         }}
@@ -47,11 +48,12 @@ function Home() {
             border: 'none',
             borderRadius: '8px',
             cursor: 'pointer',
-            minWidth: '180px',
+            minWidth: '200px',
           }}
         >
           Participar en Sesión
         </button>
+
         <button
           onClick={() => navigate('/moderador')}
           style={{
@@ -62,7 +64,7 @@ function Home() {
             border: 'none',
             borderRadius: '8px',
             cursor: 'pointer',
-            minWidth: '180px',
+            minWidth: '200px',
           }}
         >
           Panel Administrador
