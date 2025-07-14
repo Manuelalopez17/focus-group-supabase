@@ -5,39 +5,45 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 function Moderador() {
   const [respuestas, setRespuestas] = useState([])
   const [sesionSeleccionada, setSesionSeleccionada] = useState('Simulación')
-
-  const fetchRespuestas = async () => {
-    const { data, error } = await supabase
-      .from('respuestas')
-      .select('*')
-      .eq('sesion', sesionSeleccionada)
-      .order('timestamp', { ascending: false })
-
-    if (error) {
-      console.error('Error al obtener respuestas:', error)
-    } else {
-      setRespuestas(data)
-    }
-  }
+  const [etapaSeleccionada, setEtapaSeleccionada] = useState('')
 
   useEffect(() => {
-    fetchRespuestas()
+    const obtenerDatos = async () => {
+      const { data, error } = await supabase
+        .from('respuestas')
+        .select('*')
+        .eq('sesion', sesionSeleccionada)
+        .order('timestamp', { ascending: false })
 
-    const channel = supabase
+      if (!error) {
+        setRespuestas(data)
+      } else {
+        console.error("Error al obtener datos:", error)
+      }
+    }
+
+    obtenerDatos()
+
+    const canal = supabase
       .channel('realtime_riesgos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, (payload) => {
         if (payload.new?.sesion === sesionSeleccionada) {
-          fetchRespuestas()
+          obtenerDatos()
         }
       })
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(canal)
     }
   }, [sesionSeleccionada])
 
-  const riesgosAgrupados = respuestas.reduce((acc, r) => {
+  const etapasDisponibles = [...new Set(respuestas.map(r => r.etapa))]
+  const respuestasFiltradas = etapaSeleccionada
+    ? respuestas.filter(r => r.etapa === etapaSeleccionada)
+    : respuestas
+
+  const riesgosAgrupados = respuestasFiltradas.reduce((acc, r) => {
     const clave = `${r.etapa}||${r.riesgo}`
     if (!acc[clave]) acc[clave] = []
     acc[clave].push(r)
@@ -46,7 +52,7 @@ function Moderador() {
 
   const resumen = Object.entries(riesgosAgrupados).map(([clave, items]) => {
     const [etapa, riesgo] = clave.split('||')
-    const promedio = (campo) => items.reduce((acc, val) => acc + (val[campo] || 0), 0) / items.length
+    const promedio = (campo) => items.reduce((acc, val) => acc + val[campo], 0) / items.length
     const impacto = promedio('impacto')
     const frecuencia = promedio('frecuencia')
     const scoreBase = impacto * frecuencia
@@ -76,8 +82,25 @@ function Moderador() {
         onChange={(e) => setSesionSeleccionada(e.target.value)}
       >
         <option value="Simulación">Simulación</option>
-        <option value="final">Sesión Final</option>
+        <option value="Sesión Final">Sesión Final</option>
       </select>
+
+      <label className="font-semibold mr-2">Seleccionar etapa:</label>
+      <select
+        className="border p-1 rounded mb-4"
+        value={etapaSeleccionada}
+        onChange={(e) => setEtapaSeleccionada(e.target.value)}
+      >
+        <option value="">-- Todas las etapas --</option>
+        {etapasDisponibles.map((etapa, idx) => (
+          <option key={idx} value={etapa}>{etapa}</option>
+        ))}
+      </select>
+
+      <button
+        onClick={() => window.location.reload()}
+        className="mb-4 ml-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >🔄 Recargar</button>
 
       <h3 className="font-bold mt-6 mb-2">Ranking de Riesgos</h3>
       <table className="table-auto w-full text-sm mb-6 border">
