@@ -7,23 +7,35 @@ function Moderador() {
   const [sesionSeleccionada, setSesionSeleccionada] = useState('simulacion')
 
   useEffect(() => {
-    fetchRespuestas()
-    const subscription = supabase
+    const obtenerDatos = async () => {
+      const { data, error } = await supabase
+        .from('respuestas')
+        .select('*')
+        .eq('sesion', sesionSeleccionada)
+        .order('timestamp', { ascending: false })
+
+      if (!error) {
+        setRespuestas(data)
+      } else {
+        console.error("Error al obtener datos:", error)
+      }
+    }
+
+    obtenerDatos()
+
+    const canal = supabase
       .channel('realtime_riesgos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, fetchRespuestas)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, (payload) => {
+        if (payload.new?.sesion === sesionSeleccionada) {
+          obtenerDatos()
+        }
+      })
       .subscribe()
-    return () => supabase.removeChannel(subscription)
+
+    return () => {
+      supabase.removeChannel(canal)
+    }
   }, [sesionSeleccionada])
-
-  const fetchRespuestas = async () => {
-    const { data, error } = await supabase
-      .from('respuestas')
-      .select('*')
-      .eq('sesion', sesionSeleccionada)
-      .order('timestamp', { ascending: false })
-
-    if (!error) setRespuestas(data)
-  }
 
   const riesgosAgrupados = respuestas.reduce((acc, r) => {
     const clave = `${r.etapa}||${r.riesgo}`
