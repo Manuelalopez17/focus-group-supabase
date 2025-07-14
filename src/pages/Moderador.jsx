@@ -1,40 +1,45 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 function Moderador() {
-  const [respuestas, setRespuestas] = useState([])
-
-  useEffect(() => {
-    fetchRespuestas()
-
-    const subscription = supabase
-      .channel('realtime_riesgos')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'respuestas' },
-        () => {
-          fetchRespuestas()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
-  }, [])
+  const [respuestas, setRespuestas] = useState([]);
 
   const fetchRespuestas = async () => {
     const { data, error } = await supabase
       .from('respuestas')
       .select('*')
-      .order('timestamp', { ascending: false })
+      .order('timestamp', { ascending: false });
 
-    if (!error) setRespuestas(data)
-  }
+    if (!error) setRespuestas(data);
+    else console.error('Error cargando respuestas:', error);
+  };
+
+  useEffect(() => {
+    fetchRespuestas(); // carga inicial
+
+    const channel = supabase
+      .channel('realtime_riesgos')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'respuestas',
+        },
+        (payload) => {
+          setRespuestas((prev) => [payload.new, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Panel del Moderador</h2>
+      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
       <table border="1" cellPadding="5">
         <thead>
           <tr>
@@ -51,9 +56,10 @@ function Moderador() {
         </thead>
         <tbody>
           {respuestas.map((r) => {
-            const base = r.impacto * r.frecuencia
+            const base = r.impacto * r.frecuencia;
             const final =
-              base * ((r.importancia_impacto / 5 + r.importancia_frecuencia / 5) / 2)
+              base * ((r.importancia_impacto / 5 + r.importancia_frecuencia / 5) / 2);
+
             return (
               <tr key={r.id}>
                 <td>{r.etapa}</td>
@@ -66,12 +72,13 @@ function Moderador() {
                 <td>{final.toFixed(2)}</td>
                 <td>{new Date(r.timestamp).toLocaleString()}</td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
+  );
 }
 
-export default Moderador
+export default Moderador;
+
