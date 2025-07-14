@@ -4,36 +4,36 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 function Moderador() {
   const [respuestas, setRespuestas] = useState([])
-  const [sesionSeleccionada, setSesionSeleccionada] = useState('simulacion')
+  const [sesionSeleccionada, setSesionSeleccionada] = useState('Simulación')
+
+  const fetchRespuestas = async () => {
+    const { data, error } = await supabase
+      .from('respuestas')
+      .select('*')
+      .eq('sesion', sesionSeleccionada)
+      .order('timestamp', { ascending: false })
+
+    if (error) {
+      console.error('Error al obtener respuestas:', error)
+    } else {
+      setRespuestas(data)
+    }
+  }
 
   useEffect(() => {
-    const obtenerDatos = async () => {
-      const { data, error } = await supabase
-        .from('respuestas')
-        .select('*')
-        .eq('sesion', sesionSeleccionada)
-        .order('timestamp', { ascending: false })
+    fetchRespuestas()
 
-      if (!error) {
-        setRespuestas(data)
-      } else {
-        console.error("Error al obtener datos:", error)
-      }
-    }
-
-    obtenerDatos()
-
-    const canal = supabase
+    const channel = supabase
       .channel('realtime_riesgos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, (payload) => {
         if (payload.new?.sesion === sesionSeleccionada) {
-          obtenerDatos()
+          fetchRespuestas()
         }
       })
       .subscribe()
 
     return () => {
-      supabase.removeChannel(canal)
+      supabase.removeChannel(channel)
     }
   }, [sesionSeleccionada])
 
@@ -46,7 +46,7 @@ function Moderador() {
 
   const resumen = Object.entries(riesgosAgrupados).map(([clave, items]) => {
     const [etapa, riesgo] = clave.split('||')
-    const promedio = (campo) => items.reduce((acc, val) => acc + val[campo], 0) / items.length
+    const promedio = (campo) => items.reduce((acc, val) => acc + (val[campo] || 0), 0) / items.length
     const impacto = promedio('impacto')
     const frecuencia = promedio('frecuencia')
     const scoreBase = impacto * frecuencia
@@ -75,7 +75,7 @@ function Moderador() {
         value={sesionSeleccionada}
         onChange={(e) => setSesionSeleccionada(e.target.value)}
       >
-        <option value="simulacion">Simulación</option>
+        <option value="Simulación">Simulación</option>
         <option value="final">Sesión Final</option>
       </select>
 

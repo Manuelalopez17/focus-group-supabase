@@ -18,7 +18,7 @@ const riesgosPorEtapa = {
 
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
-  const [sesion, setSesion] = useState('simulacion');
+  const [sesion, setSesion] = useState('Simulación');
   const [respuestas, setRespuestas] = useState({});
 
   const handleChange = (riesgo, campo, valor) => {
@@ -82,7 +82,7 @@ function Participante() {
         value={sesion}
         onChange={(e) => setSesion(e.target.value)}
       >
-        <option value="simulacion">Simulación</option>
+        <option value="Simulación">Simulación</option>
         <option value="sesion final">Sesión Final</option>
       </select>
 
