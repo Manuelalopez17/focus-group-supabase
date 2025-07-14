@@ -1,74 +1,34 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 function Home() {
-  const navigate = useNavigate();
-
   return (
-    <div
-      style={{
-        background: 'linear-gradient(to bottom right, #f7f5f0, #d0e9d1)',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-        padding: '2rem',
-        boxSizing: 'border-box',
-      }}
-    >
-      <h1 style={{ fontSize: '2.8rem', fontWeight: 'bold', marginBottom: '1rem', color: '#2c2c2c' }}>
-        Focus Group – Proyectos P6
-      </h1>
-
-      <h2 style={{ fontSize: '1.3rem', marginBottom: '2rem', color: '#333' }}>
-        Evaluación de riesgos en construcción industrializada en madera
-      </h2>
-
-      <img
-        src="/proyecto.jpg"
-        alt="Logo del Proyecto"
-        style={{
-          width: '280px',
-          maxWidth: '100%',
-          marginBottom: '2.5rem',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        }}
-      />
-
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button
-          onClick={() => navigate('/participante')}
-          style={{
-            padding: '12px 24px',
-            fontSize: '1rem',
-            backgroundColor: '#1e90ff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            minWidth: '200px',
-          }}
-        >
-          Participar en Sesión
-        </button>
-
-        <button
-          onClick={() => navigate('/moderador')}
-          style={{
-            padding: '12px 24px',
-            fontSize: '1rem',
-            backgroundColor: '#9b59b6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            minWidth: '200px',
-          }}
-        >
-          Panel Administrador
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-cream to-green-100">
+      <div className="text-center px-6 py-10 w-full max-w-3xl">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
+          Focus Group – Proyectos P6
+        </h1>
+        <p className="text-lg md:text-xl text-gray-700 mb-8">
+          Evaluación de riesgos en construcción industrializada en madera
+        </p>
+        <div className="flex justify-center mb-8">
+          <img
+            src="/proyecto.jpg"
+            alt="Logo del proyecto"
+            className="w-64 h-auto rounded-xl shadow-md"
+          />
+        </div>
+        <div className="flex flex-col md:flex-row justify-center gap-4">
+          <Link to="/participante">
+            <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+              Participar en Sesión
+            </button>
+          </Link>
+          <Link to="/moderador">
+            <button className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 transition">
+              Panel Administrador
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );
