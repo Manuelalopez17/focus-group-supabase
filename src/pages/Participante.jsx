@@ -43,20 +43,18 @@ function Participante() {
       const r = respuestas[riesgo];
       const { scoreBase, scoreFinal } = calcularScore(r);
 
-      const { error } = await supabase.from('respuestas').insert([
-        {
-          timestamp: new Date().toISOString(),
-          etapa: etapaSeleccionada,
-          sesion: sesion,
-          riesgo,
-          frecuencia: r.frecuencia,
-          impacto: r.impacto,
-          importancia_frecuencia: r.importanciaFrecuencia,
-          importancia_impacto: r.importanciaImpacto,
-          score_base: scoreBase,
-          score_final: scoreFinal
-        }
-      ]);
+      const { error } = await supabase.from('respuestas').insert([{
+        timestamp: new Date().toISOString(),
+        etapa: etapaSeleccionada,
+        sesion: sesion,
+        riesgo,
+        frecuencia: r.frecuencia,
+        impacto: r.impacto,
+        importancia_frecuencia: r.importanciaFrecuencia,
+        importancia_impacto: r.importanciaImpacto,
+        score_base: scoreBase,
+        score_final: scoreFinal
+      }]);
 
       if (error) {
         console.error('Error en Supabase:', error);
@@ -77,14 +75,16 @@ function Participante() {
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
       style={{ backgroundImage: "url('/edificio.jpg')" }}
     >
-      <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-8 max-w-5xl w-full mx-4">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">P6 – Proyecto Riesgos</h2>
+      <div className="bg-white bg-opacity-95 rounded-xl shadow-xl p-8 w-full max-w-6xl mx-4 overflow-y-auto max-h-screen">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">
+          P6 – Proyecto Riesgos
+        </h2>
 
         <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
           <div className="w-full md:w-1/2">
-            <label className="block mb-1 font-semibold">Seleccione la sesión:</label>
+            <label className="block mb-1 font-semibold text-gray-800">Seleccione la sesión:</label>
             <select
-              className="border p-2 rounded w-full"
+              className="border border-gray-300 p-2 rounded w-full"
               value={sesion}
               onChange={(e) => setSesion(e.target.value)}
             >
@@ -93,9 +93,9 @@ function Participante() {
             </select>
           </div>
           <div className="w-full md:w-1/2">
-            <label className="block mb-1 font-semibold">Seleccione etapa del proyecto:</label>
+            <label className="block mb-1 font-semibold text-gray-800">Seleccione etapa del proyecto:</label>
             <select
-              className="border p-2 rounded w-full"
+              className="border border-gray-300 p-2 rounded w-full"
               value={etapaSeleccionada}
               onChange={(e) => {
                 setEtapaSeleccionada(e.target.value);
