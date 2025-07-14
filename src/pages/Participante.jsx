@@ -72,19 +72,17 @@ function Participante() {
 
   return (
     <div
-      className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
+      className="w-full h-screen bg-cover bg-center flex items-center justify-center"
       style={{ backgroundImage: "url('/edificio.jpg')" }}
     >
-      <div className="bg-white bg-opacity-95 rounded-xl shadow-xl p-8 w-full max-w-6xl mx-4 overflow-y-auto max-h-screen">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">
-          P6 – Proyecto Riesgos
-        </h2>
+      <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-8 max-w-5xl w-full mx-4 overflow-y-auto">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">P6 – Proyecto Riesgos</h2>
 
         <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
           <div className="w-full md:w-1/2">
             <label className="block mb-1 font-semibold text-gray-800">Seleccione la sesión:</label>
             <select
-              className="border border-gray-300 p-2 rounded w-full"
+              className="border p-2 rounded w-full"
               value={sesion}
               onChange={(e) => setSesion(e.target.value)}
             >
@@ -95,7 +93,7 @@ function Participante() {
           <div className="w-full md:w-1/2">
             <label className="block mb-1 font-semibold text-gray-800">Seleccione etapa del proyecto:</label>
             <select
-              className="border border-gray-300 p-2 rounded w-full"
+              className="border p-2 rounded w-full"
               value={etapaSeleccionada}
               onChange={(e) => {
                 setEtapaSeleccionada(e.target.value);
@@ -116,7 +114,7 @@ function Participante() {
 
           return (
             <div key={index} className="border p-4 mb-4 rounded bg-white shadow">
-              <p className="font-semibold mb-2">{riesgo}</p>
+              <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                 <div>
                   <label>Frecuencia (1-5)</label>
@@ -135,7 +133,7 @@ function Participante() {
                   <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
                 </div>
               </div>
-              <p className="text-sm mt-2">
+              <p className="text-sm mt-2 text-gray-800">
                 <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final Ponderado:</strong> {scoreFinal.toFixed(2)}
               </p>
             </div>
