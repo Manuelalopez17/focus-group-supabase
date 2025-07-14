@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 function Moderador() {
   const [respuestas, setRespuestas] = useState([])
@@ -7,21 +8,11 @@ function Moderador() {
 
   useEffect(() => {
     fetchRespuestas()
-
     const subscription = supabase
       .channel('realtime_riesgos')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'respuestas' },
-        () => {
-          fetchRespuestas()
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, fetchRespuestas)
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
+    return () => supabase.removeChannel(subscription)
   }, [sesionSeleccionada])
 
   const fetchRespuestas = async () => {
@@ -29,92 +20,115 @@ function Moderador() {
       .from('respuestas')
       .select('*')
       .eq('sesion', sesionSeleccionada)
+      .order('timestamp', { ascending: false })
 
-    if (!error && data) setRespuestas(data)
+    if (!error) setRespuestas(data)
   }
 
-  const calcularPromedios = () => {
-    const agrupados = {}
-    for (const r of respuestas) {
-      const clave = `${r.etapa}||${r.riesgo}`
-      if (!agrupados[clave]) {
-        agrupados[clave] = {
-          etapa: r.etapa,
-          riesgo: r.riesgo,
-          frecuencia: [],
-          impacto: [],
-          importancia_frecuencia: [],
-          importancia_impacto: []
-        }
-      }
-      agrupados[clave].frecuencia.push(r.frecuencia)
-      agrupados[clave].impacto.push(r.impacto)
-      agrupados[clave].importancia_frecuencia.push(r.importancia_frecuencia)
-      agrupados[clave].importancia_impacto.push(r.importancia_impacto)
-    }
+  const riesgosAgrupados = respuestas.reduce((acc, r) => {
+    const clave = `${r.etapa}-${r.riesgo}`
+    if (!acc[clave]) acc[clave] = []
+    acc[clave].push(r)
+    return acc
+  }, {})
 
-    return Object.values(agrupados).map((grupo) => {
-      const promedio = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length
-      const frecuencia = promedio(grupo.frecuencia)
-      const impacto = promedio(grupo.impacto)
-      const importancia_frecuencia = promedio(grupo.importancia_frecuencia)
-      const importancia_impacto = promedio(grupo.importancia_impacto)
-      const score_base = frecuencia * impacto
-      const score_final = score_base * (importancia_frecuencia + importancia_impacto) / 100
+  const resumen = Object.entries(riesgosAgrupados).map(([clave, items]) => {
+    const [etapa, riesgo] = clave.split('-')
+    const promedio = (campo) => items.reduce((acc, val) => acc + val[campo], 0) / items.length
+    const impacto = promedio('impacto')
+    const frecuencia = promedio('frecuencia')
+    const scoreBase = impacto * frecuencia
+    const scoreFinal = promedio('score_final')
+    return { etapa, riesgo, impacto, frecuencia, scoreBase, scoreFinal }
+  }).sort((a, b) => b.scoreFinal - a.scoreFinal)
 
-      return {
-        etapa: grupo.etapa,
-        riesgo: grupo.riesgo,
-        frecuencia: frecuencia.toFixed(2),
-        impacto: impacto.toFixed(2),
-        importancia_frecuencia: importancia_frecuencia.toFixed(2),
-        importancia_impacto: importancia_impacto.toFixed(2),
-        score_base: score_base.toFixed(2),
-        score_final: score_final.toFixed(2)
-      }
-    }).sort((a, b) => b.score_final - a.score_final)
+  const getColor = (impacto, frecuencia) => {
+    const matriz = [
+      ['#DFF0D8', '#DFF0D8', '#FCF8E3', '#F2DEDE', '#F2DEDE'],
+      ['#DFF0D8', '#FCF8E3', '#FCF8E3', '#F2DEDE', '#F2DEDE'],
+      ['#FCF8E3', '#FCF8E3', '#F2DEDE', '#F2DEDE', '#F2DEDE'],
+      ['#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE'],
+      ['#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE', '#F2DEDE']
+    ]
+    return matriz[frecuencia - 1]?.[impacto - 1] || '#FFFFFF'
   }
-
-  const promedios = calcularPromedios()
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Panel del Moderador</h2>
+    <div style={{ padding: '20px' }}>
+      <h2 className="text-xl font-bold mb-4">Panel del Moderador</h2>
 
-      <label className="block mb-2 font-semibold">Seleccionar sesión:</label>
+      <label className="font-semibold mr-2">Seleccionar sesión:</label>
       <select
-        className="border p-2 mb-6 rounded"
+        className="border p-1 rounded mb-4"
         value={sesionSeleccionada}
         onChange={(e) => setSesionSeleccionada(e.target.value)}
       >
         <option value="simulacion">Simulación</option>
-        <option value="sesion_final">Sesión Final</option>
+        <option value="final">Sesión Final</option>
       </select>
 
-      <table className="table-auto w-full border-collapse border border-gray-400">
+      <h3 className="font-bold mt-6 mb-2">Ranking de Riesgos</h3>
+      <table border="1" cellPadding="5" className="mb-6 w-full">
         <thead>
-          <tr className="bg-gray-200">
-            <th className="border px-2 py-1">Etapa</th>
-            <th className="border px-2 py-1">Riesgo</th>
-            <th className="border px-2 py-1">Frecuencia</th>
-            <th className="border px-2 py-1">Impacto</th>
-            <th className="border px-2 py-1">Importancia F</th>
-            <th className="border px-2 py-1">Importancia I</th>
-            <th className="border px-2 py-1">Score Base</th>
-            <th className="border px-2 py-1">Score Final</th>
+          <tr>
+            <th>Etapa</th>
+            <th>Riesgo</th>
+            <th>Impacto</th>
+            <th>Frecuencia</th>
+            <th>Score Base</th>
+            <th>Score Final</th>
           </tr>
         </thead>
         <tbody>
-          {promedios.map((r, index) => (
-            <tr key={index}>
-              <td className="border px-2 py-1">{r.etapa}</td>
-              <td className="border px-2 py-1">{r.riesgo}</td>
-              <td className="border px-2 py-1">{r.frecuencia}</td>
-              <td className="border px-2 py-1">{r.impacto}</td>
-              <td className="border px-2 py-1">{r.importancia_frecuencia}</td>
-              <td className="border px-2 py-1">{r.importancia_impacto}</td>
-              <td className="border px-2 py-1">{r.score_base}</td>
-              <td className="border px-2 py-1 font-bold">{r.score_final}</td>
+          {resumen.map((r, idx) => (
+            <tr key={idx}>
+              <td>{r.etapa}</td>
+              <td>{r.riesgo}</td>
+              <td>{r.impacto.toFixed(2)}</td>
+              <td>{r.frecuencia.toFixed(2)}</td>
+              <td>{r.scoreBase.toFixed(2)}</td>
+              <td>{r.scoreFinal.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 className="font-bold mb-2">Gráfico de Score Final</h3>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={resumen.slice(0, 10)} layout="vertical" margin={{ left: 60 }}>
+          <XAxis type="number" />
+          <YAxis dataKey="riesgo" type="category" width={200} />
+          <Tooltip />
+          <Bar dataKey="scoreFinal">
+            {resumen.slice(0, 10).map((entry, index) => (
+              <Cell key={`cell-${index}`} fill="#82ca9d" />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+
+      <h3 className="font-bold mt-6 mb-2">Matriz de Riesgos (5x5)</h3>
+      <table border="1" cellPadding="10">
+        <thead>
+          <tr>
+            <th></th>
+            {[1, 2, 3, 4, 5].map(i => <th key={i}>Impacto {i}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {[5, 4, 3, 2, 1].map(f => (
+            <tr key={f}>
+              <th>Frecuencia {f}</th>
+              {[1, 2, 3, 4, 5].map(i => {
+                const riesgosCelda = resumen.filter(r => Math.round(r.impacto) === i && Math.round(r.frecuencia) === f)
+                return (
+                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }}>
+                    {riesgosCelda.map(r => (
+                      <div key={r.riesgo} style={{ fontSize: '12px' }}>{r.riesgo}</div>
+                    ))}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>
@@ -124,4 +138,3 @@ function Moderador() {
 }
 
 export default Moderador
-
