@@ -19,10 +19,11 @@ function Moderador() {
     obtenerDatos()
 
     const canal = supabase
-      .channel('realtime_riesgos')
+      .channel('realtime:risk-stream')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'respuestas' }, (payload) => {
-        if (payload.new?.sesion === sesionSeleccionada) {
-          obtenerDatos()
+        const nueva = payload.new
+        if (nueva?.sesion === sesionSeleccionada && (etapaSeleccionada === '' || nueva.etapa === etapaSeleccionada)) {
+          setRespuestas(prev => [nueva, ...prev])
         }
       })
       .subscribe()
@@ -78,6 +79,8 @@ function Moderador() {
             <option key={idx} value={etapa}>{etapa}</option>
           ))}
         </select>
+
+        <button className="bg-blue-500 text-white px-4 py-1 rounded" onClick={() => window.location.reload()}>Refrescar</button>
       </div>
 
       <h3 className="font-bold mt-4 mb-2">Registros en Tiempo Real</h3>
@@ -139,9 +142,10 @@ function Moderador() {
               {[1, 2, 3, 4, 5].map(i => {
                 const riesgosCelda = resumen.filter(r => Math.round(r.impacto) === i && Math.round(r.frecuencia) === f)
                 return (
-                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }} className="border p-1">
+                  <td key={i} style={{ backgroundColor: getColor(i, f), minWidth: '120px' }} className="border p-1 text-center">
+                    <div className="font-bold">{riesgosCelda.length}</div>
                     {riesgosCelda.map(r => (
-                      <div key={r.riesgo}>{r.riesgo}</div>
+                      <div key={r.riesgo} className="text-xs">{r.riesgo}</div>
                     ))}
                   </td>
                 )
