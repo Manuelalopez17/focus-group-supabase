@@ -1,4 +1,3 @@
-// src/pages/Participante.jsx
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
@@ -19,8 +18,8 @@ const riesgosPorEtapa = {
 
 function Participante() {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
+  const [sesion, setSesion] = useState('simulacion');
   const [respuestas, setRespuestas] = useState({});
-  const sesion = 'simulacion'; // Cambia a 'sesion-final' en el día oficial
 
   const handleChange = (riesgo, campo, valor) => {
     const nuevo = { ...respuestas };
@@ -48,14 +47,14 @@ function Participante() {
         {
           timestamp: new Date().toISOString(),
           etapa: etapaSeleccionada,
+          sesion: sesion,
           riesgo,
           frecuencia: r.frecuencia,
           impacto: r.impacto,
           importancia_frecuencia: r.importanciaFrecuencia,
           importancia_impacto: r.importanciaImpacto,
           score_base: scoreBase,
-          score_final: scoreFinal,
-          sesion // <--- se registra la sesión actual
+          score_final: scoreFinal
         }
       ]);
 
@@ -76,6 +75,16 @@ function Participante() {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Evaluación de Riesgos – Participante</h2>
+
+      <label className="block mb-2 font-semibold">Seleccione la sesión:</label>
+      <select
+        className="border p-2 mb-4 rounded"
+        value={sesion}
+        onChange={(e) => setSesion(e.target.value)}
+      >
+        <option value="simulacion">Simulación</option>
+        <option value="sesion final">Sesión Final</option>
+      </select>
 
       <label className="block mb-2 font-semibold">Seleccione etapa del proyecto:</label>
       <select
