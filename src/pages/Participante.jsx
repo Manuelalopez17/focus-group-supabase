@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import '../index.css'; // Asegúrate de tener Tailwind configurado
 
 const riesgosPorEtapa = {
   "Suministro": ['Retraso en entrega de materiales', 'Falta de control de calidad en insumos'],
@@ -75,14 +74,14 @@ function Participante() {
 
   return (
     <div
-      className="min-h-screen w-full bg-cover bg-center flex flex-col items-center justify-start py-10 px-4"
+      className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
       style={{ backgroundImage: "url('/edificio.jpg')" }}
     >
-      <div className="bg-white bg-opacity-80 rounded-lg shadow-lg p-6 w-full max-w-4xl">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center">P6 – Proyecto Riesgos</h2>
+      <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-8 max-w-5xl w-full mx-4">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">P6 – Proyecto Riesgos</h2>
 
         <div className="flex flex-col md:flex-row justify-center gap-6 mb-6">
-          <div>
+          <div className="w-full md:w-1/2">
             <label className="block mb-1 font-semibold">Seleccione la sesión:</label>
             <select
               className="border p-2 rounded w-full"
@@ -93,7 +92,7 @@ function Participante() {
               <option value="Sesión Final">Sesión Final</option>
             </select>
           </div>
-          <div>
+          <div className="w-full md:w-1/2">
             <label className="block mb-1 font-semibold">Seleccione etapa del proyecto:</label>
             <select
               className="border p-2 rounded w-full"
