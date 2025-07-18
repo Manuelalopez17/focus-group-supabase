@@ -1,199 +1,210 @@
+// src/pages/Participante.jsx
 import React, { useState, useEffect } from "react";
 import supabase from "../supabaseClient";
-import "./Participante.css";
+import "../App.css";
 
 const etapasProyecto = [
-  "Abastecimiento",
+  "Suministro",
   "Prefactibilidad",
   "Factibilidad",
   "Planeación",
-  "Contratación y adquisición",
+  "Contratación",
   "Diseño",
   "Fabricación",
-  "Logística y transporte",
+  "Logística",
   "Montaje",
   "Construcción",
   "Puesta en marcha",
   "Disposición final",
 ];
 
-function Participante() {
+const Participante = () => {
   const [nombre, setNombre] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [experiencia, setExperiencia] = useState("");
   const [sesion, setSesion] = useState("Sesión 2");
   const [etapaSeleccionada, setEtapaSeleccionada] = useState("");
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [riesgos, setRiesgos] = useState([]);
   const [respuestas, setRespuestas] = useState({});
 
   useEffect(() => {
-    if (sesion === "Sesión 2" && etapaSeleccionada) {
-      const fetchRiesgos = async () => {
+    const fetchRiesgos = async () => {
+      if (etapaSeleccionada && sesion === "Sesión 2") {
         const { data, error } = await supabase
           .from("riesgos")
           .select("*")
           .eq("etapa", etapaSeleccionada);
 
         if (error) {
-          console.error("Error cargando riesgos:", error);
+          console.error("Error al obtener riesgos:", error);
         } else {
           setRiesgos(data);
         }
-      };
+      }
+    };
 
-      fetchRiesgos();
-    }
-  }, [sesion, etapaSeleccionada]);
+    fetchRiesgos();
+  }, [etapaSeleccionada, sesion]);
 
   const handleEtapasAfectadasChange = (riesgoId, etapa) => {
-    const etapasSeleccionadas = respuestas[riesgoId]?.etapas_afectadas || [];
-    const nuevasEtapas = etapasSeleccionadas.includes(etapa)
-      ? etapasSeleccionadas.filter((e) => e !== etapa)
-      : [...etapasSeleccionadas, etapa];
-
-    setRespuestas((prev) => ({
-      ...prev,
-      [riesgoId]: {
-        ...prev[riesgoId],
-        etapas_afectadas: nuevasEtapas,
-      },
-    }));
+    setRespuestas((prev) => {
+      const actuales = prev[riesgoId]?.etapas_afectadas || [];
+      const nuevas =
+        actuales.includes(etapa)
+          ? actuales.filter((e) => e !== etapa)
+          : [...actuales, etapa];
+      return {
+        ...prev,
+        [riesgoId]: {
+          ...prev[riesgoId],
+          etapas_afectadas: nuevas,
+        },
+      };
+    });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     for (const riesgo of riesgos) {
       const respuesta = respuestas[riesgo.id];
-      if (respuesta?.etapas_afectadas?.length) {
-        const { error } = await supabase.from("respuestas").insert({
-          timestamp: new Date().toISOString(),
+      const etapas_afectadas = respuesta?.etapas_afectadas || [];
+
+      const { error } = await supabase.from("respuestas").insert([
+        {
           etapa: etapaSeleccionada,
-          riesgo: riesgo.nombre,
-          sesiones: sesion,
-          etapas_afectadas: respuesta.etapas_afectadas,
+          riesgo: riesgo.descripcion,
+          etapas_afectadas,
+          sesion,
           nombre,
           empresa,
           experiencia,
-        });
+        },
+      ]);
 
-        if (error) console.error("Error guardando respuesta:", error);
+      if (error) {
+        console.error("Error al guardar respuesta:", error);
       }
     }
 
-    alert("Respuestas enviadas correctamente.");
+    alert("Evaluación enviada correctamente");
+    setRespuestas({});
   };
 
   return (
     <div
       style={{
-        backgroundImage: "url('/edificio.jpg')",
+        backgroundImage: `url('/edificio.jpg')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
         padding: "2rem",
       }}
     >
       <div
         style={{
-          backgroundColor: "rgba(255, 255, 255, 0.92)",
+          background: "rgba(255, 255, 255, 0.9)",
           padding: "2rem",
-          borderRadius: "12px",
-          width: "90%",
-          maxWidth: "1000px",
+          borderRadius: "10px",
+          width: "100%",
+          maxWidth: "800px",
         }}
       >
-        {!mostrarFormulario ? (
-          <>
-            <h2 style={{ textAlign: "center" }}>Participación – P6 Proyecto Riesgos</h2>
+        <h1 style={{ textAlign: "center" }}>P6 – Proyecto Riesgos</h1>
+        <p style={{ textAlign: "center" }}>
+          Evaluación de riesgos en construcción industrializada en madera
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
             <input
+              type="text"
               placeholder="Nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
+              style={{ flex: 1 }}
             />
             <input
+              type="text"
               placeholder="Empresa"
               value={empresa}
               onChange={(e) => setEmpresa(e.target.value)}
               required
+              style={{ flex: 1 }}
             />
             <input
+              type="number"
               placeholder="Años de experiencia"
               value={experiencia}
               onChange={(e) => setExperiencia(e.target.value)}
               required
+              style={{ flex: 1 }}
             />
+          </div>
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label>Etapa del proyecto a evaluar:</label>
             <select
               value={etapaSeleccionada}
               onChange={(e) => setEtapaSeleccionada(e.target.value)}
+              required
+              style={{ width: "100%" }}
             >
-              <option value="">Seleccionar etapa a evaluar</option>
+              <option value="">Seleccione una etapa</option>
               {etapasProyecto.map((etapa) => (
                 <option key={etapa} value={etapa}>
                   {etapa}
                 </option>
               ))}
             </select>
-            <button
-              onClick={() => {
-                if (etapaSeleccionada && nombre && empresa && experiencia) {
-                  setMostrarFormulario(true);
-                } else {
-                  alert("Completa todos los campos antes de continuar.");
-                }
-              }}
-            >
-              Comenzar evaluación
-            </button>
-          </>
-        ) : (
-          <>
-            <h3>Etapa seleccionada: {etapaSeleccionada}</h3>
-            {riesgos.map((riesgo) => (
-              <div
-                key={riesgo.id}
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "8px",
-                  margin: "1rem 0",
-                  padding: "1rem",
-                }}
-              >
-                <strong>{riesgo.nombre}</strong>
-                <p>¿Qué etapas del proyecto se ven afectadas por este riesgo?</p>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "1rem",
-                  }}
-                >
-                  {etapasProyecto.map((etapa) => (
-                    <label key={etapa}>
-                      <input
-                        type="checkbox"
-                        checked={
-                          respuestas[riesgo.id]?.etapas_afectadas?.includes(etapa) || false
-                        }
-                        onChange={() =>
-                          handleEtapasAfectadasChange(riesgo.id, etapa)
-                        }
-                      />
-                      {etapa}
-                    </label>
-                  ))}
+          </div>
+
+          {sesion === "Sesión 2" && riesgos.length > 0 && (
+            <>
+              {riesgos.map((riesgo) => (
+                <div key={riesgo.id} style={{ marginBottom: "2rem" }}>
+                  <h4>{riesgo.descripcion}</h4>
+                  <p>¿Qué etapas afecta este riesgo?</p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, 1fr)",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {etapasProyecto.map((etapa) => (
+                      <label key={etapa}>
+                        <input
+                          type="checkbox"
+                          checked={
+                            respuestas[riesgo.id]?.etapas_afectadas?.includes(
+                              etapa
+                            ) || false
+                          }
+                          onChange={() =>
+                            handleEtapasAfectadasChange(riesgo.id, etapa)
+                          }
+                        />
+                        {" " + etapa}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <button onClick={handleSubmit}>Enviar respuestas</button>
-          </>
-        )}
+              ))}
+            </>
+          )}
+
+          <button type="submit" style={{ marginTop: "1rem" }}>
+            Enviar evaluación
+          </button>
+        </form>
       </div>
     </div>
   );
-}
+};
 
 export default Participante;
