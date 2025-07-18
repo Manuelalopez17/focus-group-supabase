@@ -24,31 +24,31 @@ const Participante = () => {
   const [etapaSeleccionada, setEtapaSeleccionada] = useState("");
   const [riesgos, setRiesgos] = useState([]);
   const [respuestas, setRespuestas] = useState({});
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   useEffect(() => {
     const obtenerRiesgos = async () => {
-      if (etapaSeleccionada) {
+      if (etapaSeleccionada && sesion === "Sesión 2") {
         const { data, error } = await supabase
           .from("riesgos")
           .select("riesgo")
           .eq("etapa", etapaSeleccionada);
 
-        if (!error) {
+        if (!error && data) {
           setRiesgos(data.map((r) => r.riesgo));
         }
       }
     };
 
     obtenerRiesgos();
-  }, [etapaSeleccionada]);
+  }, [etapaSeleccionada, sesion]);
 
   const handleCheckboxChange = (riesgo, etapa) => {
     setRespuestas((prev) => {
       const prevSeleccionadas = prev[riesgo] || [];
-      const nuevas =
-        prevSeleccionadas.includes(etapa)
-          ? prevSeleccionadas.filter((e) => e !== etapa)
-          : [...prevSeleccionadas, etapa];
+      const nuevas = prevSeleccionadas.includes(etapa)
+        ? prevSeleccionadas.filter((e) => e !== etapa)
+        : [...prevSeleccionadas, etapa];
 
       return {
         ...prev,
@@ -79,29 +79,41 @@ const Participante = () => {
   };
 
   return (
-    <div style={{
-      backgroundImage: 'url("/edificio.jpg")',
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "2rem"
-    }}>
-      <div style={{
-        backgroundColor: "rgba(255, 255, 255, 0.85)",
+    <div
+      style={{
+        backgroundImage: 'url("/edificio.jpg")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
         padding: "2rem",
-        borderRadius: "10px",
-        maxWidth: "900px",
-        width: "100%",
-        textAlign: "center"
-      }}>
-        {!etapaSeleccionada ? (
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.85)",
+          padding: "2rem",
+          borderRadius: "10px",
+          maxWidth: "1000px",
+          width: "100%",
+          textAlign: "center",
+        }}
+      >
+        {!mostrarFormulario ? (
           <>
             <h1>P6 – Proyecto Riesgos</h1>
             <p>Evaluación de riesgos en construcción industrializada en madera</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center", marginBottom: "1rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+                justifyContent: "center",
+                marginBottom: "1rem",
+              }}
+            >
               <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
               <input placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
               <input placeholder="Años de experiencia" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
@@ -113,33 +125,39 @@ const Participante = () => {
               <select value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
                 <option value="">-- Seleccione Etapa --</option>
                 {etapasProyecto.map((etapa) => (
-                  <option key={etapa} value={etapa}>{etapa}</option>
+                  <option key={etapa} value={etapa}>
+                    {etapa}
+                  </option>
                 ))}
               </select>
-              <button onClick={() => setEtapaSeleccionada(etapaSeleccionada)}>Comenzar evaluación</button>
+              <button onClick={() => setMostrarFormulario(true)}>Comenzar evaluación</button>
             </div>
           </>
         ) : (
           <>
             <h2>Evaluación – {etapaSeleccionada}</h2>
-            {riesgos.map((riesgo, index) => (
-              <div key={index} style={{ marginBottom: "1.5rem", textAlign: "left" }}>
-                <strong>{riesgo}</strong>
-                <p>¿Qué etapas afecta este riesgo?</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                  {etapasProyecto.map((etapa) => (
-                    <label key={etapa}>
-                      <input
-                        type="checkbox"
-                        checked={respuestas[riesgo]?.includes(etapa) || false}
-                        onChange={() => handleCheckboxChange(riesgo, etapa)}
-                      />
-                      {etapa}
-                    </label>
-                  ))}
+            {sesion === "Sesión 2" && riesgos.length > 0 ? (
+              riesgos.map((riesgo, index) => (
+                <div key={index} style={{ marginBottom: "1.5rem", textAlign: "left" }}>
+                  <strong>{riesgo}</strong>
+                  <p>¿Qué etapas afecta este riesgo?</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                    {etapasProyecto.map((etapa) => (
+                      <label key={etapa}>
+                        <input
+                          type="checkbox"
+                          checked={respuestas[riesgo]?.includes(etapa) || false}
+                          onChange={() => handleCheckboxChange(riesgo, etapa)}
+                        />
+                        {etapa}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p>Esta evaluación solo está disponible en la Sesión 2.</p>
+            )}
             <button onClick={enviarEvaluacion}>Enviar evaluación</button>
           </>
         )}
