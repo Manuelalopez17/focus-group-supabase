@@ -27,28 +27,13 @@ const sesiones = [
 ];
 
 function Participante() {
+  const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
   const [sesion, setSesion] = useState('Simulación');
   const [nombre, setNombre] = useState('');
   const [empresa, setEmpresa] = useState('');
   const [experiencia, setExperiencia] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [evaluando, setEvaluando] = useState(false);
-  const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
-
-  const handleCheckboxChange = (riesgo, etapa) => {
-    const actual = respuestas[riesgo]?.etapas_afectadas || [];
-    const actualizado = actual.includes(etapa)
-      ? actual.filter(e => e !== etapa)
-      : [...actual, etapa];
-
-    setRespuestas(prev => ({
-      ...prev,
-      [riesgo]: {
-        ...prev[riesgo],
-        etapas_afectadas: actualizado
-      }
-    }));
-  };
 
   const handleChange = (riesgo, campo, valor) => {
     const nuevo = { ...respuestas };
@@ -59,6 +44,9 @@ function Participante() {
       const importanciaFrecuencia = 100 - importanciaImpacto;
       nuevo[riesgo]['importanciaImpacto'] = importanciaImpacto;
       nuevo[riesgo]['importanciaFrecuencia'] = importanciaFrecuencia;
+    } else if (campo === 'etapas_afectadas') {
+      const opciones = Array.from(valor.selectedOptions, o => o.value);
+      nuevo[riesgo][campo] = opciones;
     } else {
       nuevo[riesgo][campo] = parseFloat(valor) || 0;
     }
@@ -77,51 +65,36 @@ function Participante() {
   };
 
   const handleSubmit = async () => {
-    if (!nombre || !empresa || !experiencia) {
-      alert("Por favor complete todos los campos del participante.");
+    if (!nombre || !empresa || !experiencia || !etapaSeleccionada) {
+      alert("Por favor complete todos los campos del participante y seleccione una etapa.");
       return;
     }
 
-    for (const [riesgo, r] of Object.entries(respuestas)) {
-      if (sesion === 'Sesión 2') {
-        const { error } = await supabase.from('respuestas').insert([{
-          timestamp: new Date().toISOString(),
-          sesion,
-          riesgo,
-          nombre_participante: nombre,
-          empresa,
-          experiencia_anios: experiencia,
-          etapas_afectadas: r.etapas_afectadas || []
-        }]);
+    for (const riesgo of Object.keys(respuestas)) {
+      const r = respuestas[riesgo];
+      const { scoreBase, scoreFinal } = calcularScore(r);
 
-        if (error) {
-          console.error('Error Supabase:', error);
-          alert(`Error al guardar: ${riesgo}\n${error.message}`);
-          return;
-        }
-      } else {
-        const { scoreBase, scoreFinal } = calcularScore(r);
-        const { error } = await supabase.from('respuestas').insert([{
-          timestamp: new Date().toISOString(),
-          etapa: etapaSeleccionada,
-          sesion,
-          riesgo,
-          frecuencia: r.frecuencia,
-          impacto: r.impacto,
-          importancia_frecuencia: r.importanciaFrecuencia,
-          importancia_impacto: r.importanciaImpacto,
-          score_base: scoreBase,
-          score_final: scoreFinal,
-          nombre_participante: nombre,
-          empresa,
-          experiencia_anios: experiencia
-        }]);
+      const { error } = await supabase.from('respuestas').insert([{
+        timestamp: new Date().toISOString(),
+        etapa: etapaSeleccionada,
+        sesion: sesion,
+        riesgo,
+        frecuencia: r.frecuencia || null,
+        impacto: r.impacto || null,
+        importancia_frecuencia: r.importanciaFrecuencia || null,
+        importancia_impacto: r.importanciaImpacto || null,
+        score_base: scoreBase || null,
+        score_final: scoreFinal || null,
+        nombre_participante: nombre,
+        empresa: empresa,
+        experiencia_anios: experiencia,
+        etapas_afectadas: r.etapas_afectadas || null
+      }]);
 
-        if (error) {
-          console.error('Error Supabase:', error);
-          alert(`Error al guardar: ${riesgo}\n${error.message}`);
-          return;
-        }
+      if (error) {
+        console.error('Error en Supabase:', error);
+        alert(`Error al guardar el riesgo: ${riesgo}\n${error.message}`);
+        return;
       }
     }
 
@@ -134,6 +107,8 @@ function Participante() {
     setExperiencia('');
   };
 
+  const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
+
   return (
     <div
       style={{
@@ -144,7 +119,8 @@ function Participante() {
         height: '100vh',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative'
       }}
     >
       <div
@@ -156,11 +132,12 @@ function Participante() {
           maxWidth: '1100px',
           width: '90%',
           height: '90%',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
         }}
       >
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>P6 – Proyecto Riesgos</h1>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#222' }}>P6 – Proyecto Riesgos</h1>
+        <h2 style={{ fontSize: '1.1rem', color: '#444', marginBottom: '1rem' }}>
           Evaluación de riesgos en construcción industrializada en madera
         </h2>
 
@@ -169,23 +146,23 @@ function Participante() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <input className="border p-2 rounded" placeholder="Nombre del participante" value={nombre} onChange={(e) => setNombre(e.target.value)} />
               <input className="border p-2 rounded" placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
-              <input className="border p-2 rounded" placeholder="Años de experiencia" type="number" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
+              <input className="border p-2 rounded" placeholder="Años de experiencia" type="number" min="0" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
             </div>
 
-            <select className="border p-2 rounded w-full mb-6" value={sesion} onChange={(e) => setSesion(e.target.value)}>
-              {sesiones.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <select className="border p-2 rounded w-full" value={sesion} onChange={(e) => setSesion(e.target.value)}>
+                {sesiones.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
 
-            {sesion !== 'Sesión 2' && (
-              <select className="border p-2 rounded w-full mb-6" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
+              <select className="border p-2 rounded w-full" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
                 <option value="">-- Seleccione Etapa del Proyecto --</option>
                 {Object.keys(riesgosPorEtapa).map((etapa) => <option key={etapa} value={etapa}>{etapa}</option>)}
               </select>
-            )}
+            </div>
 
             <button
               onClick={() => {
-                if (!nombre || !empresa || !experiencia || (sesion !== 'Sesión 2' && !etapaSeleccionada)) {
+                if (!nombre || !empresa || !experiencia || !etapaSeleccionada) {
                   alert("Por favor complete todos los campos antes de comenzar.");
                   return;
                 }
@@ -206,62 +183,52 @@ function Participante() {
           </>
         ) : (
           <>
-            {(sesion === 'Sesión 2' ? Object.entries(riesgosPorEtapa) : [[etapaSeleccionada, riesgosPorEtapa[etapaSeleccionada]]])
-              .map(([etapa, riesgos]) => (
-                <div key={etapa}>
-                  <h3 className="font-bold mt-6 mb-2">{etapa}</h3>
-                  {riesgos.map((riesgo, index) => {
-                    const r = respuestas[riesgo] || {};
-                    const { scoreBase, scoreFinal } = calcularScore(r);
+            {riesgos.map((riesgo, index) => {
+              const r = respuestas[riesgo] || {};
+              const { scoreBase, scoreFinal } = calcularScore(r);
 
-                    return (
-                      <div key={index} className="border p-4 mb-4 rounded bg-white shadow text-left">
-                        <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
+              return (
+                <div key={index} className="border p-4 mb-4 rounded bg-white shadow text-left">
+                  <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
 
-                        {sesion === 'Sesión 2' ? (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {todasLasEtapas.map((et) => (
-                              <label key={et} className="text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={r.etapas_afectadas?.includes(et) || false}
-                                  onChange={() => handleCheckboxChange(riesgo, et)}
-                                  className="mr-1"
-                                />
-                                {et}
-                              </label>
-                            ))}
-                          </div>
-                        ) : (
-                          <>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                              <div>
-                                <label>Frecuencia (1-5)</label>
-                                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
-                              </div>
-                              <div>
-                                <label>Impacto (1-5)</label>
-                                <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
-                              </div>
-                              <div>
-                                <label>% Importancia Impacto</label>
-                                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
-                              </div>
-                              <div>
-                                <label>% Importancia Frecuencia</label>
-                                <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} disabled />
-                              </div>
-                            </div>
-                            <p className="text-sm mt-2 text-gray-800">
-                              <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final:</strong> {scoreFinal.toFixed(2)}
-                            </p>
-                          </>
-                        )}
+                  {sesion === 'Sesión 2' ? (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Etapas del proyecto que afecta este riesgo:</label>
+                      <select multiple className="border p-2 w-full rounded" value={r.etapas_afectadas || []} onChange={(e) => handleChange(riesgo, 'etapas_afectadas', e)}>
+                        {todasLasEtapas.map((etapa) => (
+                          <option key={etapa} value={etapa}>{etapa}</option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                      <div>
+                        <label>Frecuencia (1-5)</label>
+                        <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <label>Impacto (1-5)</label>
+                        <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
+                      </div>
+                      <div>
+                        <label>% Importancia Impacto</label>
+                        <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
+                      </div>
+                      <div>
+                        <label>% Importancia Frecuencia</label>
+                        <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} disabled />
+                      </div>
+                    </div>
+                  )}
+
+                  {sesion !== 'Sesión 2' && (
+                    <p className="text-sm mt-2 text-gray-800">
+                      <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final:</strong> {scoreFinal.toFixed(2)}
+                    </p>
+                  )}
                 </div>
-              ))}
+              );
+            })}
 
             <button
               onClick={handleSubmit}
@@ -286,4 +253,3 @@ function Participante() {
 }
 
 export default Participante;
-
