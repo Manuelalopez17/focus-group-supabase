@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { supabase } from "./supabaseClient";
-import "./App.css";
+import React, { useEffect, useState } from 'react';
+import supabase from '../supabaseClient';
+import './Participante.css';
 
 const etapasProyecto = [
   "Suministro",
@@ -14,110 +14,119 @@ const etapasProyecto = [
   "Montaje",
   "Construcción",
   "Puesta en marcha",
-  "Disposición final",
+  "Disposición final"
 ];
 
-const riesgosPorEtapa = {
-  Suministro: ["Retraso en entrega de materiales", "Falta de control de calidad en insumos"],
-  Prefactibilidad: ["Falta de estudios de mercado", "Subestimación de costos iniciales"],
-  // Agrega las demás etapas con sus respectivos riesgos si ya están disponibles
-};
-
 function Participante() {
-  const [nombre, setNombre] = useState("");
-  const [empresa, setEmpresa] = useState("");
-  const [experiencia, setExperiencia] = useState("");
-  const [sesion, setSesion] = useState("Sesión 1");
-  const [etapaSeleccionada, setEtapaSeleccionada] = useState("");
-  const [formIniciado, setFormIniciado] = useState(false);
-  const [respuestas, setRespuestas] = useState({});
+  const [nombre, setNombre] = useState('');
+  const [empresa, setEmpresa] = useState('');
+  const [experiencia, setExperiencia] = useState('');
+  const [sesion, setSesion] = useState('');
+  const [etapaSeleccionada, setEtapaSeleccionada] = useState('');
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [riesgos, setRiesgos] = useState([]);
+  const [etapasAfectadas, setEtapasAfectadas] = useState({});
 
-  const handleCheckboxChange = (riesgo, etapaAfectada) => {
-    setRespuestas((prev) => {
-      const etapas = prev[riesgo] || [];
-      if (etapas.includes(etapaAfectada)) {
-        return { ...prev, [riesgo]: etapas.filter((e) => e !== etapaAfectada) };
+  useEffect(() => {
+    const fetchRiesgos = async () => {
+      if (sesion === 'Sesión 2' && etapaSeleccionada) {
+        const { data, error } = await supabase
+          .from('respuestas')
+          .select('riesgo')
+          .eq('etapa', etapaSeleccionada);
+
+        if (error) {
+          console.error('Error al cargar riesgos:', error);
+        } else {
+          const riesgosUnicos = [...new Set(data.map(r => r.riesgo))];
+          setRiesgos(riesgosUnicos);
+        }
+      }
+    };
+    fetchRiesgos();
+  }, [sesion, etapaSeleccionada]);
+
+  const handleEtapasChange = (riesgo, etapa) => {
+    setEtapasAfectadas(prev => {
+      const actuales = prev[riesgo] || [];
+      if (actuales.includes(etapa)) {
+        return {
+          ...prev,
+          [riesgo]: actuales.filter(e => e !== etapa)
+        };
       } else {
-        return { ...prev, [riesgo]: [...etapas, etapaAfectada] };
+        return {
+          ...prev,
+          [riesgo]: [...actuales, etapa]
+        };
       }
     });
   };
 
-  const handleSubmit = async () => {
-    if (!etapaSeleccionada) return alert("Selecciona una etapa para evaluar");
-
-    const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     for (const riesgo of riesgos) {
-      const etapasAfectadas = respuestas[riesgo] || [];
+      const { error } = await supabase.from('respuestas').insert({
+        nombre,
+        empresa,
+        experiencia,
+        sesion,
+        etapa: etapaSeleccionada,
+        riesgo,
+        etapas_afectadas: etapasAfectadas[riesgo] || []
+      });
 
-      const { error } = await supabase.from("respuestas").insert([
-        {
-          nombre,
-          empresa,
-          experiencia,
-          sesion,
-          etapa: etapaSeleccionada,
-          riesgo,
-          etapas_afectadas: etapasAfectadas,
-        },
-      ]);
-
-      if (error) console.error("Error al guardar respuesta:", error.message);
+      if (error) {
+        console.error('Error al guardar la respuesta:', error);
+      }
     }
 
-    alert("Respuestas guardadas correctamente");
-    setFormIniciado(false);
-    setRespuestas({});
+    alert('Evaluación enviada correctamente');
   };
 
   return (
-    <div className="contenedor-principal">
-      {!formIniciado ? (
-        <div className="form-inicial">
-          <h2>P6 – Proyecto Riesgos</h2>
-          <p>Evaluación de riesgos en construcción industrializada en madera</p>
+    <div className="fondo">
+      {!mostrarFormulario ? (
+        <div className="formulario-inicial">
+          <h1>P6 – Proyecto Riesgos</h1>
+          <h2>Evaluación de riesgos en construcción industrializada en madera</h2>
           <input type="text" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
           <input type="text" placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
           <input type="number" placeholder="Años de experiencia" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
           <select value={sesion} onChange={(e) => setSesion(e.target.value)}>
-            <option value="Sesión 1">Sesión 1</option>
+            <option value="">-- Seleccione Sesión --</option>
             <option value="Sesión 2">Sesión 2</option>
           </select>
-          {sesion === "Sesión 2" && (
-            <select value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
-              <option value="">Selecciona una etapa</option>
-              {Object.keys(riesgosPorEtapa).map((etapa) => (
-                <option key={etapa} value={etapa}>{etapa}</option>
-              ))}
-            </select>
-          )}
-          <button onClick={() => setFormIniciado(true)}>Comenzar evaluación</button>
+          <select value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
+            <option value="">-- Seleccione Etapa --</option>
+            {etapasProyecto.map(etapa => (
+              <option key={etapa} value={etapa}>{etapa}</option>
+            ))}
+          </select>
+          <button onClick={() => setMostrarFormulario(true)}>Comenzar evaluación</button>
         </div>
       ) : (
-        <div className="evaluacion">
-          <h3>{etapaSeleccionada}</h3>
-          {riesgosPorEtapa[etapaSeleccionada]?.map((riesgo, idx) => (
-            <div key={idx}>
-              <strong>{riesgo}</strong>
+        <form className="evaluacion-riesgos" onSubmit={handleSubmit}>
+          <h2>{etapaSeleccionada}</h2>
+          {riesgos.map((riesgo, idx) => (
+            <div key={idx} className="riesgo-block">
+              <p><strong>{riesgo}</strong></p>
               <p>¿Qué etapas afecta este riesgo?</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
-                {etapasProyecto.map((etapa, i) => (
-                  <label key={i}>
-                    <input
-                      type="checkbox"
-                      checked={respuestas[riesgo]?.includes(etapa) || false}
-                      onChange={() => handleCheckboxChange(riesgo, etapa)}
-                    />
-                    {etapa}
-                  </label>
-                ))}
-              </div>
-              <hr />
+              {etapasProyecto.map(etapa => (
+                <label key={etapa} className="checkbox-etapa">
+                  <input
+                    type="checkbox"
+                    checked={etapasAfectadas[riesgo]?.includes(etapa) || false}
+                    onChange={() => handleEtapasChange(riesgo, etapa)}
+                  />
+                  {etapa}
+                </label>
+              ))}
             </div>
           ))}
-          <button onClick={handleSubmit}>Enviar evaluación</button>
-        </div>
+          <button type="submit">Enviar evaluación</button>
+        </form>
       )}
     </div>
   );
