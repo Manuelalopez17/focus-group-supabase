@@ -16,7 +16,12 @@ const riesgosPorEtapa = {
   "Disposición final": ['Mal manejo de residuos', 'Falta de cierre documental']
 };
 
-const todasLasEtapas = Object.keys(riesgosPorEtapa);
+const todasLasEtapas = [
+  "Suministro", "Prefactibilidad", "Factibilidad", "Planeación", "Contratación",
+  "Diseño", "Fabricación", "Logística y Transporte", "Montaje", "Construcción",
+  "Puesta en marcha", "Disposición final", "Postventa", "Operación", "Mantenimiento",
+  "Evaluación", "Reutilización", "Fin de vida", "Supervisión", "Control de calidad", "Interventoría"
+];
 
 const sesiones = [
   "Simulación",
@@ -45,8 +50,8 @@ function Participante() {
       nuevo[riesgo]['importanciaImpacto'] = importanciaImpacto;
       nuevo[riesgo]['importanciaFrecuencia'] = importanciaFrecuencia;
     } else if (campo === 'etapas_afectadas') {
-      const opciones = Array.from(valor.selectedOptions, o => o.value);
-      nuevo[riesgo][campo] = opciones;
+      const opciones = Array.from(e.target.selectedOptions, option => option.value);
+      nuevo[riesgo]['etapas_afectadas'] = opciones;
     } else {
       nuevo[riesgo][campo] = parseFloat(valor) || 0;
     }
@@ -66,7 +71,7 @@ function Participante() {
 
   const handleSubmit = async () => {
     if (!nombre || !empresa || !experiencia || !etapaSeleccionada) {
-      alert("Por favor complete todos los campos del participante y seleccione una etapa.");
+      alert("Por favor complete todos los campos.");
       return;
     }
 
@@ -77,28 +82,28 @@ function Participante() {
       const { error } = await supabase.from('respuestas').insert([{
         timestamp: new Date().toISOString(),
         etapa: etapaSeleccionada,
-        sesion: sesion,
+        sesion,
         riesgo,
-        frecuencia: r.frecuencia || null,
-        impacto: r.impacto || null,
-        importancia_frecuencia: r.importanciaFrecuencia || null,
-        importancia_impacto: r.importanciaImpacto || null,
-        score_base: scoreBase || null,
-        score_final: scoreFinal || null,
+        frecuencia: r.frecuencia,
+        impacto: r.impacto,
+        importancia_frecuencia: r.importanciaFrecuencia,
+        importancia_impacto: r.importanciaImpacto,
+        score_base: scoreBase,
+        score_final: scoreFinal,
         nombre_participante: nombre,
-        empresa: empresa,
+        empresa,
         experiencia_anios: experiencia,
-        etapas_afectadas: r.etapas_afectadas || null
+        etapas_afectadas: r.etapas_afectadas || []
       }]);
 
       if (error) {
-        console.error('Error en Supabase:', error);
-        alert(`Error al guardar el riesgo: ${riesgo}\n${error.message}`);
+        console.error('Error al guardar en Supabase:', error);
+        alert(`Error al guardar el riesgo: ${riesgo}`);
         return;
       }
     }
 
-    alert('Respuestas enviadas con éxito.');
+    alert('Respuestas enviadas correctamente.');
     setEvaluando(false);
     setRespuestas({});
     setEtapaSeleccionada('');
@@ -110,74 +115,51 @@ function Participante() {
   const riesgos = riesgosPorEtapa[etapaSeleccionada] || [];
 
   return (
-    <div
-      style={{
-        backgroundImage: 'url("/edificio.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative'
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
-          padding: '40px',
-          borderRadius: '12px',
-          textAlign: 'center',
-          maxWidth: '1100px',
-          width: '90%',
-          height: '90%',
-          overflowY: 'auto',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-        }}
-      >
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#222' }}>P6 – Proyecto Riesgos</h1>
-        <h2 style={{ fontSize: '1.1rem', color: '#444', marginBottom: '1rem' }}>
-          Evaluación de riesgos en construcción industrializada en madera
-        </h2>
+    <div style={{
+      backgroundImage: 'url("/edificio.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      width: '100vw',
+      height: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        padding: '40px',
+        borderRadius: '12px',
+        width: '90%',
+        maxHeight: '90%',
+        overflowY: 'auto'
+      }}>
+        <h1 style={{ textAlign: 'center', fontWeight: 'bold' }}>P6 – Proyecto Riesgos</h1>
+        <h2 style={{ textAlign: 'center' }}>Evaluación de riesgos en construcción industrializada en madera</h2>
 
         {!evaluando ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <input className="border p-2 rounded" placeholder="Nombre del participante" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-              <input className="border p-2 rounded" placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
-              <input className="border p-2 rounded" placeholder="Años de experiencia" type="number" min="0" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
-            </div>
+            <input className="border p-2 m-2" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            <input className="border p-2 m-2" placeholder="Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
+            <input className="border p-2 m-2" placeholder="Años de experiencia" value={experiencia} onChange={(e) => setExperiencia(e.target.value)} />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <select className="border p-2 rounded w-full" value={sesion} onChange={(e) => setSesion(e.target.value)}>
-                {sesiones.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+            <select className="border p-2 m-2" value={sesion} onChange={(e) => setSesion(e.target.value)}>
+              {sesiones.map(s => <option key={s}>{s}</option>)}
+            </select>
 
-              <select className="border p-2 rounded w-full" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
-                <option value="">-- Seleccione Etapa del Proyecto --</option>
-                {Object.keys(riesgosPorEtapa).map((etapa) => <option key={etapa} value={etapa}>{etapa}</option>)}
-              </select>
-            </div>
+            <select className="border p-2 m-2" value={etapaSeleccionada} onChange={(e) => setEtapaSeleccionada(e.target.value)}>
+              <option value="">-- Seleccione Etapa --</option>
+              {Object.keys(riesgosPorEtapa).map(etapa => <option key={etapa}>{etapa}</option>)}
+            </select>
 
             <button
+              className="bg-blue-500 text-white p-2 rounded m-2"
               onClick={() => {
                 if (!nombre || !empresa || !experiencia || !etapaSeleccionada) {
-                  alert("Por favor complete todos los campos antes de comenzar.");
+                  alert("Complete todos los campos.");
                   return;
                 }
                 setEvaluando(true);
-              }}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#1e90ff',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
+              }}>
               Comenzar evaluación
             </button>
           </>
@@ -188,41 +170,46 @@ function Participante() {
               const { scoreBase, scoreFinal } = calcularScore(r);
 
               return (
-                <div key={index} className="border p-4 mb-4 rounded bg-white shadow text-left">
-                  <p className="font-semibold mb-2 text-gray-900">{riesgo}</p>
+                <div key={index} className="border p-4 my-4 bg-white rounded">
+                  <strong>{riesgo}</strong>
 
                   {sesion === 'Sesión 2' ? (
-                    <>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Etapas del proyecto que afecta este riesgo:</label>
-                      <select multiple className="border p-2 w-full rounded" value={r.etapas_afectadas || []} onChange={(e) => handleChange(riesgo, 'etapas_afectadas', e)}>
-                        {todasLasEtapas.map((etapa) => (
+                    <div className="mt-2">
+                      <label>¿Qué etapas afecta este riesgo?</label>
+                      <select
+                        multiple
+                        className="w-full border p-2 mt-1"
+                        value={r.etapas_afectadas || []}
+                        onChange={(e) => handleChange(riesgo, 'etapas_afectadas', e)}
+                      >
+                        {todasLasEtapas.map(etapa => (
                           <option key={etapa} value={etapa}>{etapa}</option>
                         ))}
                       </select>
-                    </>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
                       <div>
                         <label>Frecuencia (1-5)</label>
-                        <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} />
+                        <input type="number" min="1" max="5" value={r.frecuencia || ''} onChange={(e) => handleChange(riesgo, 'frecuencia', e.target.value)} className="w-full border p-1 rounded" />
                       </div>
                       <div>
                         <label>Impacto (1-5)</label>
-                        <input type="number" min="1" max="5" className="border w-full p-1 rounded" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} />
+                        <input type="number" min="1" max="5" value={r.impacto || ''} onChange={(e) => handleChange(riesgo, 'impacto', e.target.value)} className="w-full border p-1 rounded" />
                       </div>
                       <div>
                         <label>% Importancia Impacto</label>
-                        <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} />
+                        <input type="number" min="0" max="100" value={r.importanciaImpacto || ''} onChange={(e) => handleChange(riesgo, 'importanciaImpacto', e.target.value)} className="w-full border p-1 rounded" />
                       </div>
                       <div>
                         <label>% Importancia Frecuencia</label>
-                        <input type="number" min="0" max="100" className="border w-full p-1 rounded" value={r.importanciaFrecuencia || ''} disabled />
+                        <input value={r.importanciaFrecuencia || ''} disabled className="w-full border p-1 rounded bg-gray-100" />
                       </div>
                     </div>
                   )}
 
                   {sesion !== 'Sesión 2' && (
-                    <p className="text-sm mt-2 text-gray-800">
+                    <p className="text-sm mt-2">
                       <strong>Score Base:</strong> {scoreBase.toFixed(2)} | <strong>Score Final:</strong> {scoreFinal.toFixed(2)}
                     </p>
                   )}
@@ -230,21 +217,7 @@ function Participante() {
               );
             })}
 
-            <button
-              onClick={handleSubmit}
-              style={{
-                marginTop: '1rem',
-                padding: '12px 24px',
-                backgroundColor: '#1e90ff',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              Enviar evaluación
-            </button>
+            <button className="bg-blue-600 text-white p-3 mt-4 rounded" onClick={handleSubmit}>Enviar evaluación</button>
           </>
         )}
       </div>
