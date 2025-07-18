@@ -20,7 +20,7 @@ const etapasProyecto = [
 const riesgosPorEtapa = {
   Suministro: ["Retraso en entrega de materiales", "Falta de control de calidad en insumos"],
   Prefactibilidad: ["Falta de estudios de mercado", "Subestimación de costos iniciales"],
-  // Agrega aquí las demás etapas con sus respectivos riesgos
+  // Agrega las demás etapas con sus respectivos riesgos si ya están disponibles
 };
 
 function Participante() {
@@ -32,13 +32,13 @@ function Participante() {
   const [formIniciado, setFormIniciado] = useState(false);
   const [respuestas, setRespuestas] = useState({});
 
-  const handleCheckboxChange = (riesgo, etapa) => {
+  const handleCheckboxChange = (riesgo, etapaAfectada) => {
     setRespuestas((prev) => {
-      const etapasSeleccionadas = prev[riesgo] || [];
-      if (etapasSeleccionadas.includes(etapa)) {
-        return { ...prev, [riesgo]: etapasSeleccionadas.filter((e) => e !== etapa) };
+      const etapas = prev[riesgo] || [];
+      if (etapas.includes(etapaAfectada)) {
+        return { ...prev, [riesgo]: etapas.filter((e) => e !== etapaAfectada) };
       } else {
-        return { ...prev, [riesgo]: [...etapasSeleccionadas, etapa] };
+        return { ...prev, [riesgo]: [...etapas, etapaAfectada] };
       }
     });
   };
@@ -100,9 +100,10 @@ function Participante() {
           {riesgosPorEtapa[etapaSeleccionada]?.map((riesgo, idx) => (
             <div key={idx}>
               <strong>{riesgo}</strong>
-              <div>
-                {etapasProyecto.map((etapa) => (
-                  <label key={etapa}>
+              <p>¿Qué etapas afecta este riesgo?</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+                {etapasProyecto.map((etapa, i) => (
+                  <label key={i}>
                     <input
                       type="checkbox"
                       checked={respuestas[riesgo]?.includes(etapa) || false}
